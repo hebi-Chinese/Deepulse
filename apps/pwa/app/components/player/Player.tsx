@@ -221,9 +221,13 @@ function useTrackMeta(currentSong: ApiSong | undefined): TrackMeta {
 // ────────────────────────────────────────────────────────────────────────
 
 function SharedAudio({ logic }: { readonly logic: PlayerLogic }) {
+  // crossOrigin="anonymous" 必须有: useAudioAnalyser 会调 createMediaElementSource,
+  // 跨域 audio 没 crossOrigin → Chrome 把 graph 标记 tainted → 整条输出静音
+  // (audio.paused=false 还在播,但听不到声音)。NCM CDN 已返回 Access-Control-Allow-Origin: *
   return (
     <audio
       ref={logic.audioRef}
+      crossOrigin="anonymous"
       onTimeUpdate={logic.actions.onTimeUpdate}
       onLoadedMetadata={logic.actions.onTimeUpdate}
       onPlay={logic.actions.onPlay}

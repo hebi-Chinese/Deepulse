@@ -1,68 +1,38 @@
 'use client'
 
-// useAudioUnlock · 解决 Chrome autoplay 拦截
-// 背景: React useEffect 异步设 audio.src 然后 play(),已脱离 user-gesture window,被 Chrome 拦
-// 同时 useAudioAnalyser.createMediaElementSource 会把 audio 输出路由到 AudioContext,
-// 如果 ctx 是 suspended → 即使 audio.paused=false 也**没声音**
+// useAudioUnlock · 首次用户事件触发时,在 gesture 同步链路里 resume 共享 AudioContext
+// 原因: useAudioAnalyser 复用同一个 ctx,ctx 必须 running 才能让 audio 通过它出声
+// (否则即使 audio.paused=false,声音也被 suspended ctx 吞掉)
 //
-// 修复 (两件事都在首次用户事件里同步做完):
-//  1) 共享 AudioContext.resume() — 让 analyser 复用的同一个 ctx 进入 running
-//     同时播一个 0-length buffer,Chrome 把页面标记为已激活
-//  2) 给 audio 元素一次"已经在用户手势内成功播过"的标记
-//     用 silent base64 wav 当 src 调一次 play+pause
+// 不再 prime audio 元素 src: 之前用 silent wav 调 play()+pause() 想给元素一个 "已激活"
+// 标记,但 audio 元素本身不需要单独激活 (Chrome 看 document.userActivation),
+// 反而引入 race condition — silent 的 pause 异步 resolve 时可能把真歌也 pause 掉。
 
 import { useEffect } from 'react'
 
 import { getSharedAudioCtx, unlockSharedAudioCtx } from './sharedAudioCtx'
 
-// 极短 silent wav (8-bit 单声道, 1 sample) base64
-const SILENT_WAV =
-  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
-
-export function useAudioUnlock(audioRef: React.RefObject<HTMLAudioElement | null>): void {
+export function useAudioUnlock(_audioRef: React.RefObject<HTMLAudioElement | null>): void {
   useEffect(() => {
     let unlocked = false
 
     const unlock = (): void => {
       if (unlocked) return
+      unlocked = true
       void unlockSharedAudioCtx().then((ok) => {
-        // 顺手播一个 0-length buffer,触发 Chrome 把页面标记为激活
-        if (ok) {
-          const ctx = getSharedAudioCtx()
-          if (ctx !== null) {
-            try {
-              const bufferSource = ctx.createBufferSource()
-              bufferSource.buffer = ctx.createBuffer(1, 1, 22050)
-              bufferSource.connect(ctx.destination)
-              bufferSource.start(0)
-            } catch {
-              // 解锁失败不阻塞后续
-            }
-          }
+        if (!ok) return
+        const ctx = getSharedAudioCtx()
+        if (ctx === null) return
+        try {
+          // 播一个 0-length buffer,触发 Chrome 把页面标记为已激活
+          const bufferSource = ctx.createBufferSource()
+          bufferSource.buffer = ctx.createBuffer(1, 1, 22050)
+          bufferSource.connect(ctx.destination)
+          bufferSource.start(0)
+        } catch {
+          // 不阻塞
         }
       })
-
-      // 给 audio 元素本身一次成功 play 的记录
-      const audio = audioRef.current
-      if (audio === null) return
-      if (audio.src.length > 0 && !audio.src.startsWith('data:')) {
-        unlocked = true
-        return
-      }
-      const originalMuted = audio.muted
-      audio.muted = true
-      audio.src = SILENT_WAV
-      audio
-        .play()
-        .then(() => {
-          audio.pause()
-          audio.currentTime = 0
-          audio.muted = originalMuted
-          unlocked = true
-        })
-        .catch(() => {
-          audio.muted = originalMuted
-        })
     }
 
     window.addEventListener('pointerdown', unlock, { passive: true })
@@ -71,5 +41,5 @@ export function useAudioUnlock(audioRef: React.RefObject<HTMLAudioElement | null
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('keydown', unlock)
     }
-  }, [audioRef])
+  }, [])
 }
