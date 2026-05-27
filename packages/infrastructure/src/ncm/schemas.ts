@@ -7,9 +7,7 @@ import { z } from 'zod'
 export const rawSongSchema = z.object({
   id: z.number(),
   name: z.string(),
-  ar: z
-    .array(z.object({ id: z.number(), name: z.string() }))
-    .optional(),
+  ar: z.array(z.object({ id: z.number(), name: z.string() })).optional(),
   al: z
     .object({
       id: z.number(),
@@ -30,9 +28,7 @@ export const searchBodySchema = z.object({
 })
 
 export const songUrlBodySchema = z.object({
-  data: z
-    .array(z.object({ url: z.string().nullable() }))
-    .optional(),
+  data: z.array(z.object({ url: z.string().nullable() })).optional(),
 })
 
 export const lyricBodySchema = z.object({
@@ -62,21 +58,18 @@ export const fmBodySchema = z.object({
   data: z.array(rawSongSchema).optional(),
 })
 
-// playlist_track_all 走的是 /api/v3/song/detail,顶层 body 含 songs 数组
+// playlist_track_all 调 /playlist/track/all (内部还会调一次 song/detail 拿 song 信息),
+// 顶层 body 含 songs 数组,shape 跟 rawSongSchema 一致
 export const playlistTracksBodySchema = z.object({
   songs: z.array(rawSongSchema).optional(),
 })
 
 export const intelligenceBodySchema = z.object({
-  data: z
-    .array(z.object({ songInfo: rawSongSchema.optional() }))
-    .optional(),
+  data: z.array(z.object({ songInfo: rawSongSchema.optional() })).optional(),
 })
 
 export const toplistBodySchema = z.object({
-  playlist: z
-    .object({ tracks: z.array(rawSongSchema).optional() })
-    .optional(),
+  playlist: z.object({ tracks: z.array(rawSongSchema).optional() }).optional(),
 })
 
 export const likelistBodySchema = z.object({

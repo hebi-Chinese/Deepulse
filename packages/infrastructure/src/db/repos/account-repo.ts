@@ -1,17 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // AccountRepo · ncm_account 持久 cookie 等元信息
+// 接口在 application/ports/repos.ts (Clean Arch: infra 实现 application 定义的 port)
 
 import { eq } from 'drizzle-orm'
 
 import { ncmAccount } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-
-export type INcmAccountRepo = {
-  saveCookie(cookie: string): Promise<void>
-  loadCookie(): Promise<string | null>
-  clear(): Promise<void>
-}
+import type { INcmAccountRepo } from '@claudio/application'
 
 export function createNcmAccountRepo(client: DbClient): INcmAccountRepo {
   return {

@@ -11,6 +11,10 @@ import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@cla
 const DEFAULT_MODEL = '星穹铁道-中文-流萤'
 const DEFAULT_VERSION = 'v4'
 const DEFAULT_LANG = '中文'
+// undici 默认 headers/body 各 300s,SoVITS 卡死会拖死 /api/dj/say 5 分钟。
+// 合成 < 10s 是正常水平,留 30s 上限给 cold-start
+const HEADERS_TIMEOUT_MS = 30_000
+const BODY_TIMEOUT_MS = 30_000
 
 // gpt-sovits /infer_single 响应契约(只取我们关心的字段)
 const inferResponseSchema = z.object({
@@ -43,6 +47,8 @@ export class GptSovitsTtsClient implements ITtsClient {
       // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
+      headersTimeout: HEADERS_TIMEOUT_MS,
+      bodyTimeout: BODY_TIMEOUT_MS,
     })
 
     if (res.statusCode < 200 || res.statusCode >= 300) {

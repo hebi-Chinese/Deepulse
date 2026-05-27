@@ -18,10 +18,6 @@ import {
   createSongRepo,
   createTasteRepo,
   type DbClient,
-  type IConversationsRepo,
-  type INcmAccountRepo,
-  type INcmSnapshotRepo,
-  type ITasteRepo,
 } from '@claudio/infrastructure/db'
 import { NcmClient } from '@claudio/infrastructure/ncm'
 import { GptSovitsTtsClient } from '@claudio/infrastructure/tts'
@@ -30,11 +26,15 @@ import type {
   IBrain,
   IBubblesRepo,
   ICalendarSource,
+  IConversationsRepo,
+  INcmAccountRepo,
   INcmClient,
+  INcmSnapshotRepo,
   IPlanRepo,
   IPlaysRepo,
   IPrefsRepo,
   ISongRepo,
+  ITasteRepo,
   ITtsClient,
 } from '@claudio/application'
 import type { Env } from '@claudio/shared'

@@ -1,25 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // TasteRepo · taste snapshots（含 markdown 内容）
+// 接口 + TasteSnapshotEntry 在 application/ports/repos.ts
 
 import { desc, eq } from 'drizzle-orm'
 
 import { tasteSnapshots, type DbTasteSnapshot } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-
-export type TasteSnapshotEntry = {
-  readonly id: number
-  readonly takenAtMs: number
-  readonly content: string
-  readonly reason?: string
-}
-
-export type ITasteRepo = {
-  append(content: string, reason?: string): Promise<number>
-  latest(): Promise<TasteSnapshotEntry | null>
-  list(limit: number): Promise<readonly TasteSnapshotEntry[]>
-  byId(id: number): Promise<TasteSnapshotEntry | null>
-}
+import type { ITasteRepo, TasteSnapshotEntry } from '@claudio/application'
 
 function dbRowToEntry(row: DbTasteSnapshot): TasteSnapshotEntry {
   const base = { id: row.id, takenAtMs: row.takenAtMs, content: row.content }

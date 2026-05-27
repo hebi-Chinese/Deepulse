@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { ncmAccount, ncmSnapshot } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { NcmUserSnapshot } from '@claudio/application'
+import type { INcmSnapshotRepo, NcmUserSnapshot } from '@claudio/application'
 
 // 边界校验: DB 里的 JSON 反序列化时,至少保证顶层 shape 合法
 // 完整 schema 等 v1.5 (应用层把 NcmUserSnapshot 拆 zod 后再共享)
@@ -43,13 +43,6 @@ function parseSnapshot(raw: string): NcmUserSnapshot {
   // 这里能 z.infer 出完整类型,去掉这个 cast (Standards §1.3 知情豁免)
   // 当前: 顶层 shape 已校验,内嵌 playlists/songs/recentPlayed 等由写入方 NcmClient 保证
   return parsed as NcmUserSnapshot
-}
-
-export type INcmSnapshotRepo = {
-  save(snapshot: NcmUserSnapshot): Promise<void>
-  load(): Promise<NcmUserSnapshot | null>
-  /** 仅返回元信息：是否有快照 + 最后拉取时间 */
-  status(): Promise<{ exists: boolean; lastSnapshotAtMs: number | null }>
 }
 
 export function createNcmSnapshotRepo(client: DbClient): INcmSnapshotRepo {

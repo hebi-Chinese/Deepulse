@@ -14,11 +14,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 import { splitMessages } from './prompt.js'
 import { parseStreamLine } from './stream-parser.js'
 
-import type {
-  IBrain,
-  BrainMessage,
-  BrainGenerateOptions,
-} from '@claudio/application'
+import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/application'
 
 // 故意不约束 spawn() 返回类型,让 TS 直接推 execa 的具体 Result 形状,
 // 避免 exactOptionalPropertyTypes 把通用 Options 和具体调用打架
@@ -47,14 +43,24 @@ export class ClaudeCodeBrain implements IBrain {
       ...(options?.signal !== undefined ? { signal: options.signal } : {}),
     })
 
-    yield* readTextDeltas(child)
-
-    const result = await child
-    if (result.exitCode !== 0) {
-      throw new ExternalServiceError(
-        'claude',
-        `exited ${String(result.exitCode)}: ${stringifyStream(result.stderr)}`,
-      )
+    // 用 try/finally 保证: 无论 caller break 出 for await 还是跑完,
+    // child 都会被等到结束并检查 exitCode。否则提前 break 时 await child 永远不执行,
+    // 失败状态被吞 + 子进程残留
+    let aborted = true
+    try {
+      yield* readTextDeltas(child)
+      aborted = false
+    } finally {
+      // 仅在 caller 提前退出时 kill 让 promise 立即 settle;自然完成时直接 await
+      if (aborted) child.kill('SIGTERM')
+      const result = await child
+      // signal 终止 (caller cancel) 不算 error;exitCode !== 0 且无 signal 才报错
+      if (!aborted && result.exitCode !== 0 && result.signal === undefined) {
+        throw new ExternalServiceError(
+          'claude',
+          `exited ${String(result.exitCode)}: ${stringifyStream(result.stderr)}`,
+        )
+      }
     }
   }
 
@@ -165,13 +171,13 @@ function parseGenerateJsonResult<T>(stdout: string, schema: z.ZodSchema<T>): T {
   const envelope = parseJson(stdout, 'envelope')
   const validated = envelopeSchema.safeParse(envelope)
   if (!validated.success) {
-    throw new ExternalServiceError(
-      'claude',
-      `envelope shape invalid: ${validated.error.message}`,
-    )
+    throw new ExternalServiceError('claude', `envelope shape invalid: ${validated.error.message}`)
   }
   if (validated.data.is_error) {
-    throw new ExternalServiceError('claude', `reported error: ${validated.data.result ?? 'unknown'}`)
+    throw new ExternalServiceError(
+      'claude',
+      `reported error: ${validated.data.result ?? 'unknown'}`,
+    )
   }
   const raw = validated.data.result
   if (raw === undefined) {

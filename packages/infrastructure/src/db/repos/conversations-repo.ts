@@ -1,24 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // ConversationsRepo · DJ 对话历史
+// 接口 + ConversationEntry 在 application/ports/repos.ts
 
 import { desc } from 'drizzle-orm'
 
 import { conversations, type DbConversation } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-
-export type ConversationEntry = {
-  readonly tsMs: number
-  readonly userMsg: string
-  readonly djReply: string
-  readonly brainLatencyMs?: number
-  readonly contextSize?: number
-}
-
-export type IConversationsRepo = {
-  append(entry: ConversationEntry): Promise<void>
-  recent(limit: number): Promise<readonly ConversationEntry[]>
-}
+import type { ConversationEntry, IConversationsRepo } from '@claudio/application'
 
 function dbRowToEntry(row: DbConversation): ConversationEntry {
   const base = { tsMs: row.tsMs, userMsg: row.userMsg, djReply: row.djReply }

@@ -92,5 +92,6 @@ export type INcmClient = {
 
   // cookie 管理
   setCookie(cookie: string): void
+  clearCookie(): void
   getCookie(): string | undefined
 }

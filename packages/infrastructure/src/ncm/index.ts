@@ -102,6 +102,12 @@ export class NcmClient implements INcmClient {
     this.cookie = cookie
   }
 
+  clearCookie(): void {
+    // 必须有 — 否则 logout 删了 DB 但内存里还在,所有 getCookie() 守卫的接口
+    // (playlists/mine, snapshot/refresh, ...) 在本进程内仍然"已登录"
+    this.cookie = undefined
+  }
+
   getCookie(): string | undefined {
     return this.cookie
   }
@@ -126,9 +132,7 @@ export class NcmClient implements INcmClient {
     // type 字段在 NCM 库声明里是 const enum,isolatedModules 下无法 import,只能 bridge
     const body = await callNcm(
       () =>
-        searchSuggestFn(
-          this.withCookie({ keywords: query, type: 'mobile' as unknown as never }),
-        ),
+        searchSuggestFn(this.withCookie({ keywords: query, type: 'mobile' as unknown as never })),
       suggestBodySchema,
       'searchSuggest',
     )
@@ -188,11 +192,7 @@ export class NcmClient implements INcmClient {
   }
 
   async privateFm(): Promise<readonly Song[]> {
-    const body = await callNcm(
-      () => personalFm(this.withCookie({})),
-      fmBodySchema,
-      'privateFm',
-    )
+    const body = await callNcm(() => personalFm(this.withCookie({})), fmBodySchema, 'privateFm')
     return (body.data ?? []).map(rawToSong)
   }
 
@@ -203,15 +203,19 @@ export class NcmClient implements INcmClient {
     // user_playlist 配合 cookie 直接返回当前用户的所有 playlist (创建的 + 收藏的)。
     // 不再调 userDetail 拿 self id 区分 isCreated — userDetail 接口对未拉 snapshot 的
     // 用户偶发 'network/lib error',会拖累整条链路。
-    // selfUserId 由 playlist[0].creator.userId 近似 (自建 playlist 总在前),够用。
+    // TODO(2026-05-27): limit 200 — 超过会被静默截断,M3 推荐期再做分页
     const body = await callNcm(
       () => userPlaylist(this.withCookie({ uid: 0, limit: 200 })),
       userPlaylistBodySchema,
       'getMyPlaylists',
     )
     const playlists = body.playlist ?? []
-    const selfUserId = playlists[0]?.userId ?? 0
-    return mapPlaylists(playlists, selfUserId)
+    if (playlists.length === 0) return []
+    // selfUserId 由 playlist[0].userId 近似 (自建 playlist 通常排在前)。
+    // 用户没自建任何 playlist 时,playlist[0] 是收藏的,isCreated 全部错为 false —
+    // 当前没有 logger 可注入到 infra 这层,这个边界 case 之后接 logger 时补 warn
+    const firstId = playlists[0]?.userId ?? 0
+    return mapPlaylists(playlists, firstId)
   }
 
   async getPlaylistTracks(
@@ -219,10 +223,7 @@ export class NcmClient implements INcmClient {
     options?: { limit?: number },
   ): Promise<readonly Song[]> {
     const body = await callNcm(
-      () =>
-        playlistTrackAll(
-          this.withCookie({ id: playlistId, limit: options?.limit ?? 1000 }),
-        ),
+      () => playlistTrackAll(this.withCookie({ id: playlistId, limit: options?.limit ?? 1000 })),
       playlistTracksBodySchema,
       'getPlaylistTracks',
     )
@@ -271,11 +272,7 @@ export class NcmClient implements INcmClient {
     if (this.cookie === undefined) {
       throw new ExternalServiceError('NCM', 'fmTrash requires login')
     }
-    await callNcm(
-      () => fmTrash(this.withCookie({ id: songId })),
-      genericBodySchema,
-      'fmTrash',
-    )
+    await callNcm(() => fmTrash(this.withCookie({ id: songId })), genericBodySchema, 'fmTrash')
   }
 
   // ── 登录 ──
@@ -299,11 +296,7 @@ export class NcmClient implements INcmClient {
   }
 
   async qrCheck(unikey: string): Promise<NcmLoginQrStatus> {
-    const body = await callNcm(
-      () => loginQrCheck({ key: unikey }),
-      qrCheckBodySchema,
-      'qrCheck',
-    )
+    const body = await callNcm(() => loginQrCheck({ key: unikey }), qrCheckBodySchema, 'qrCheck')
     return interpretQrCheck(body)
   }
 

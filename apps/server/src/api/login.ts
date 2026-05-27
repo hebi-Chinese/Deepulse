@@ -6,7 +6,6 @@ import { z } from 'zod'
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'
 
-
 const checkQuery = z.object({ unikey: z.string().min(1) })
 
 export function createLoginPlugin(container: Container): FastifyPluginAsync {
@@ -40,6 +39,7 @@ export function createLoginPlugin(container: Container): FastifyPluginAsync {
 
     app.post('/api/login/logout', async () => {
       await container.account.clear()
+      container.ncm.clearCookie()
       return { ok: true }
     })
   }
