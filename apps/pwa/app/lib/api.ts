@@ -65,13 +65,17 @@ async function get<T>(path: string, schema: z.ZodSchema<T>): Promise<T> {
 }
 
 async function post<T>(path: string, schema: z.ZodSchema<T>, body?: unknown): Promise<T> {
+  // Fastify 不允许 Content-Type application/json + 空 body (FST_ERR_CTP_EMPTY_JSON_BODY → 400),
+  // 所以只在真有 body 时才带 header
   const init: RequestInit = {
     method: 'POST',
     credentials: 'include',
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header name
-    headers: { 'Content-Type': 'application/json' },
   }
-  if (body !== undefined) init.body = JSON.stringify(body)
+  if (body !== undefined) {
+    init.body = JSON.stringify(body)
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header name
+    init.headers = { 'Content-Type': 'application/json' }
+  }
   const res = await fetch(`${env.serverUrl}${path}`, init)
   if (!res.ok) {
     throw new Error(`POST ${path} failed: ${String(res.status)} ${res.statusText}`)
@@ -114,6 +118,8 @@ export const api = {
     get(`/api/login/qr/check?unikey=${encodeURIComponent(unikey)}`, qrCheckSchema),
 
   loginStatus: () => get('/api/login/status', loginStatusSchema),
+
+  logout: () => post('/api/login/logout', okSchema),
 
   feedback: (songId: string, action: 'like' | 'unlike' | 'trash') =>
     post('/api/feedback', okSchema, { songId, action }),

@@ -9,6 +9,8 @@ import { useEffect } from 'react'
 import { LANGUAGES, LANGUAGE_LABEL } from '../../lib/i18n'
 import { WEATHERS } from '../atmosphere/types'
 
+import { AccountSection } from './AccountSection'
+
 import type { LanguageHook } from './useLanguage'
 import type { Language } from '../../lib/i18n'
 import type { Weather } from '../atmosphere/types'
@@ -75,6 +77,7 @@ function PanelBody({
   const { lang, setLang, t } = language
   return (
     <>
+      <AccountSection language={language} />
       <Group label={t('settingsLanguage')}>
         {LANGUAGES.map((l) => (
           <Pill

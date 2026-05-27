@@ -55,6 +55,17 @@ type Dict = {
   readonly weatherSnow: string
   readonly weatherFog: string
   readonly weatherThunder: string
+  readonly settingsAccount: string
+  readonly accountLoggedOut: string
+  readonly accountLoginWithNcm: string
+  readonly accountFetchingQr: string
+  readonly accountScanWithNcmApp: string
+  readonly accountQrExpired: string
+  readonly accountRefreshQr: string
+  readonly accountScanned: string
+  readonly accountSuccess: string
+  readonly accountLoggedIn: string
+  readonly accountLogout: string
 }
 
 const ZH: Dict = {
@@ -103,6 +114,17 @@ const ZH: Dict = {
   weatherSnow: '雪',
   weatherFog: '雾',
   weatherThunder: '雷',
+  settingsAccount: '网易云账号',
+  accountLoggedOut: '未登录,只能拿到 30s 试听片段',
+  accountLoginWithNcm: '扫码登录',
+  accountFetchingQr: '生成二维码中…',
+  accountScanWithNcmApp: '用网易云手机端扫一扫',
+  accountQrExpired: '二维码过期了',
+  accountRefreshQr: '刷新二维码',
+  accountScanned: '已扫码,请在手机确认',
+  accountSuccess: '登录成功',
+  accountLoggedIn: '已登录',
+  accountLogout: '登出',
 }
 
 const EN: Dict = {
@@ -151,6 +173,17 @@ const EN: Dict = {
   weatherSnow: 'Snow',
   weatherFog: 'Fog',
   weatherThunder: 'Thunder',
+  settingsAccount: 'NCM account',
+  accountLoggedOut: 'Not signed in — only 30s previews available',
+  accountLoginWithNcm: 'Sign in via QR',
+  accountFetchingQr: 'Generating QR…',
+  accountScanWithNcmApp: 'Scan with the NetEase Cloud Music app',
+  accountQrExpired: 'QR expired',
+  accountRefreshQr: 'Refresh QR',
+  accountScanned: 'Scanned — confirm on phone',
+  accountSuccess: 'Signed in',
+  accountLoggedIn: 'Signed in',
+  accountLogout: 'Sign out',
 }
 
 export const DICTS: Record<Language, Dict> = { zh: ZH, en: EN }
