@@ -151,10 +151,10 @@ function ListenHud(props: HudProps) {
   return (
     <>
       <div
-        className="fixed bottom-28 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 px-6 py-3 rounded-full"
+        className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 px-6 py-2 rounded-full"
         style={{
           backdropFilter: 'blur(12px)',
-          background: 'rgba(0,0,0,0.4)',
+          background: 'rgba(0,0,0,0.55)',
           opacity: props.visible ? 0.92 : 0,
           pointerEvents: props.visible ? 'auto' : 'none',
           transition: 'opacity 240ms ease-out',
