@@ -9,6 +9,7 @@ import { createDiscoverPlugin } from './api/discover.js'
 import { createDjPlugin } from './api/dj.js'
 import { createFeedbackPlugin } from './api/feedback.js'
 import { createLoginPlugin } from './api/login.js'
+import { createPlaylistPlugin } from './api/playlist.js'
 import { createPlaysPlugin } from './api/plays.js'
 import { createSearchPlugin } from './api/search.js'
 import { createSnapshotPlugin } from './api/snapshot.js'
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
   await app.register(createLoginPlugin(container))
   await app.register(createFeedbackPlugin(container))
   await app.register(createSnapshotPlugin(container))
+  await app.register(createPlaylistPlugin(container))
   await app.register(createPlaysPlugin(container))
   await app.register(createDjPlugin(container))
 

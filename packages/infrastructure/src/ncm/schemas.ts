@@ -62,6 +62,11 @@ export const fmBodySchema = z.object({
   data: z.array(rawSongSchema).optional(),
 })
 
+// playlist_track_all 走的是 /api/v3/song/detail,顶层 body 含 songs 数组
+export const playlistTracksBodySchema = z.object({
+  songs: z.array(rawSongSchema).optional(),
+})
+
 export const intelligenceBodySchema = z.object({
   data: z
     .array(z.object({ songInfo: rawSongSchema.optional() }))

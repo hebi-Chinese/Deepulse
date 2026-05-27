@@ -11,6 +11,8 @@ import { api, type ApiSong } from '../../lib/api'
 import { ControlsBar } from '../player/ControlsBar'
 import { QueuePanel } from '../player/QueuePanel'
 
+import { PlaylistsSection } from './PlaylistsSection'
+
 import type { PlayerLogic } from '../player/usePlayerLogic'
 import type { LanguageHook } from '../settings/useLanguage'
 
@@ -31,6 +33,11 @@ export function BrowseSill({ logic, language, onPlayAndListen }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 h-full">
             <div className="space-y-5 overflow-y-auto pr-1">
               <NowPlayingTile logic={logic} language={language} onPlayAndListen={onPlayAndListen} />
+              <PlaylistsSection
+                language={language}
+                onPlay={onPlayAndListen}
+                onEnqueue={logic.actions.queueSong}
+              />
               <DailyRecommendations onPlay={onPlayAndListen} onEnqueue={logic.actions.queueSong} language={language} />
             </div>
             <div className="overflow-y-auto">

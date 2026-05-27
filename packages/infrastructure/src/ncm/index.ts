@@ -14,6 +14,7 @@ import {
   intelligenceBodySchema,
   likelistBodySchema,
   lyricBodySchema,
+  playlistTracksBodySchema,
   qrCheckBodySchema,
   qrCreateBodySchema,
   qrKeyBodySchema,
@@ -42,7 +43,7 @@ import type {
   NcmSearchSuggestion,
   NcmUserSnapshot,
 } from '@claudio/application'
-import type { Song, SongId } from '@claudio/domain'
+import type { PlaylistId, Song, SongId } from '@claudio/domain'
 import type { z } from 'zod'
 
 const {
@@ -55,6 +56,7 @@ const {
   login_qr_key: loginQrKey,
   lyric: ncmLyric,
   personal_fm: personalFm,
+  playlist_track_all: playlistTrackAll,
   playmode_intelligence_list: playmodeIntelligenceList,
   recommend_songs: recommendSongs,
   search_suggest: searchSuggestFn,
@@ -192,6 +194,39 @@ export class NcmClient implements INcmClient {
       'privateFm',
     )
     return (body.data ?? []).map(rawToSong)
+  }
+
+  async getMyPlaylists(): Promise<readonly NcmPlaylistMeta[]> {
+    if (this.cookie === undefined) {
+      throw new ExternalServiceError('NCM', 'getMyPlaylists requires login')
+    }
+    // user_playlist 配合 cookie 直接返回当前用户的所有 playlist (创建的 + 收藏的)。
+    // 不再调 userDetail 拿 self id 区分 isCreated — userDetail 接口对未拉 snapshot 的
+    // 用户偶发 'network/lib error',会拖累整条链路。
+    // selfUserId 由 playlist[0].creator.userId 近似 (自建 playlist 总在前),够用。
+    const body = await callNcm(
+      () => userPlaylist(this.withCookie({ uid: 0, limit: 200 })),
+      userPlaylistBodySchema,
+      'getMyPlaylists',
+    )
+    const playlists = body.playlist ?? []
+    const selfUserId = playlists[0]?.userId ?? 0
+    return mapPlaylists(playlists, selfUserId)
+  }
+
+  async getPlaylistTracks(
+    playlistId: PlaylistId,
+    options?: { limit?: number },
+  ): Promise<readonly Song[]> {
+    const body = await callNcm(
+      () =>
+        playlistTrackAll(
+          this.withCookie({ id: playlistId, limit: options?.limit ?? 1000 }),
+        ),
+      playlistTracksBodySchema,
+      'getPlaylistTracks',
+    )
+    return (body.songs ?? []).map(rawToSong)
   }
 
   async heartMode(songId: SongId): Promise<readonly Song[]> {

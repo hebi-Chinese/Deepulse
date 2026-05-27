@@ -66,6 +66,11 @@ type Dict = {
   readonly accountSuccess: string
   readonly accountLoggedIn: string
   readonly accountLogout: string
+  readonly myPlaylists: string
+  readonly playlistsEmpty: string
+  readonly playlistsLoginPrompt: string
+  readonly playlistSongCount: string
+  readonly playlistPlayAll: string
 }
 
 const ZH: Dict = {
@@ -125,6 +130,11 @@ const ZH: Dict = {
   accountSuccess: '登录成功',
   accountLoggedIn: '已登录',
   accountLogout: '登出',
+  myPlaylists: '我的歌单',
+  playlistsEmpty: '还没有歌单',
+  playlistsLoginPrompt: '登录后能看到你在网易云的歌单',
+  playlistSongCount: '首',
+  playlistPlayAll: '全部入列',
 }
 
 const EN: Dict = {
@@ -184,6 +194,11 @@ const EN: Dict = {
   accountSuccess: 'Signed in',
   accountLoggedIn: 'Signed in',
   accountLogout: 'Sign out',
+  myPlaylists: 'My playlists',
+  playlistsEmpty: 'No playlists yet',
+  playlistsLoginPrompt: 'Sign in to see your NetEase playlists',
+  playlistSongCount: 'songs',
+  playlistPlayAll: 'Queue all',
 }
 
 export const DICTS: Record<Language, Dict> = { zh: ZH, en: EN }

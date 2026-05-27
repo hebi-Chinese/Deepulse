@@ -29,6 +29,16 @@ const searchRespSchema = z.object({
   total: z.number(),
 })
 const songsListSchema = z.object({ songs: z.array(apiSongSchema) })
+const apiPlaylistMetaSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  songCount: z.number(),
+  coverUrl: z.string().optional(),
+  isCreated: z.boolean(),
+})
+const myPlaylistsRespSchema = z.object({ playlists: z.array(apiPlaylistMetaSchema) })
+
+export type ApiPlaylistMeta = z.infer<typeof apiPlaylistMetaSchema>
 const songUrlSchema = z.object({ url: z.string(), quality: z.string() })
 const lyricSchema = z.object({
   raw: z.string(),
@@ -120,6 +130,14 @@ export const api = {
   loginStatus: () => get('/api/login/status', loginStatusSchema),
 
   logout: () => post('/api/login/logout', okSchema),
+
+  myPlaylists: () => get('/api/playlists/mine', myPlaylistsRespSchema),
+
+  playlistTracks: (id: string, limit?: number) =>
+    get(
+      `/api/playlist/${encodeURIComponent(id)}/tracks${limit !== undefined ? `?limit=${String(limit)}` : ''}`,
+      songsListSchema,
+    ),
 
   feedback: (songId: string, action: 'like' | 'unlike' | 'trash') =>
     post('/api/feedback', okSchema, { songId, action }),

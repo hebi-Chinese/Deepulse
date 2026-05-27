@@ -79,6 +79,8 @@ export type INcmClient = {
 
   // 用户库
   fetchUserSnapshot(): Promise<NcmUserSnapshot>
+  getMyPlaylists(): Promise<readonly NcmPlaylistMeta[]>
+  getPlaylistTracks(playlistId: PlaylistId, options?: { limit?: number }): Promise<readonly Song[]>
 
   // 互动
   like(songId: SongId, on: boolean): Promise<void>
