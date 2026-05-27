@@ -55,7 +55,13 @@ export function usePlayerLogic(): PlayerLogic {
   )
 
   useTrackLoader(currentSong, setState)
-  useAudioSourceSync({ audioRef, audioUrl: state.audioUrl, muted: state.muted, volume: state.volume, setState })
+  useAudioSourceSync({
+    audioRef,
+    audioUrl: state.audioUrl,
+    muted: state.muted,
+    volume: state.volume,
+    setState,
+  })
 
   const queueActions = useQueueActions(setState)
   const transportActions = useTransportActions(audioRef, setState)
@@ -82,6 +88,22 @@ function useTrackLoader(currentSong: ApiSong | undefined, setState: SetState): v
   useEffect(() => {
     if (currentSong === undefined) return
     let cancelled = false
+
+    // 本地导入歌:直接喂 blob URL,跳过 NCM fetch 和歌词
+    if (currentSong.localUrl !== undefined) {
+      setState((s) => ({
+        ...s,
+        audioUrl: currentSong.localUrl,
+        audioLoading: false,
+        lrcLines: [],
+        lrcLoading: false,
+        error: undefined,
+      }))
+      return () => {
+        cancelled = true
+      }
+    }
+
     setState((s) => ({ ...s, audioLoading: true, lrcLoading: true, error: undefined }))
 
     Promise.all([api.songUrl(currentSong.id, 'standard'), api.lyric(currentSong.id)])

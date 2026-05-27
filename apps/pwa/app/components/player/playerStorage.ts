@@ -54,8 +54,10 @@ export type PersistFields = Pick<PlayerState, 'queue' | 'mode' | 'volume' | 'mut
 
 export function persist(fields: PersistFields): void {
   if (typeof window === 'undefined') return
+  // 过滤掉本地导入歌 (localUrl 是 blob URL,刷新即失效)
+  const cleanQueue = fields.queue.filter((s) => s.localUrl === undefined)
   const data: Persisted = {
-    queue: fields.queue as Persisted['queue'],
+    queue: cleanQueue,
     mode: fields.mode,
     volume: fields.volume,
     muted: fields.muted,

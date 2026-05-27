@@ -71,6 +71,7 @@ type Dict = {
   readonly playlistsLoginPrompt: string
   readonly playlistSongCount: string
   readonly playlistPlayAll: string
+  readonly importLocal: string
 }
 
 const ZH: Dict = {
@@ -135,6 +136,7 @@ const ZH: Dict = {
   playlistsLoginPrompt: '登录后能看到你在网易云的歌单',
   playlistSongCount: '首',
   playlistPlayAll: '全部入列',
+  importLocal: '导入本地音乐',
 }
 
 const EN: Dict = {
@@ -199,6 +201,7 @@ const EN: Dict = {
   playlistsLoginPrompt: 'Sign in to see your NetEase playlists',
   playlistSongCount: 'songs',
   playlistPlayAll: 'Queue all',
+  importLocal: 'Import local music',
 }
 
 export const DICTS: Record<Language, Dict> = { zh: ZH, en: EN }

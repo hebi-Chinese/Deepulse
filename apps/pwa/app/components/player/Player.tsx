@@ -21,7 +21,7 @@ import { WindowToggle } from '../room/WindowToggle'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { useLanguage } from '../settings/useLanguage'
 
-
+import { ImportButton } from './ImportButton'
 import { useAudioUnlock } from './useAudioUnlock'
 import { usePlayerLogic } from './usePlayerLogic'
 import { useViewMode } from './useViewMode'
@@ -41,22 +41,7 @@ export function Player() {
   const trackMeta = useTrackMeta(logic.currentSong)
   useDataModeSync(view.mode)
   useAudioUnlock(logic.audioRef)
-
-  const playAndListen = useCallback(
-    (song: ApiSong) => {
-      trackMeta.markUserInitiated()
-      logic.actions.playSong(song)
-      view.enterListen()
-    },
-    [logic.actions, view, trackMeta],
-  )
-  const playKeepView = useCallback(
-    (song: ApiSong) => {
-      trackMeta.markUserInitiated()
-      logic.actions.playSong(song)
-    },
-    [logic.actions, trackMeta],
-  )
+  const cb = usePlayCallbacks(logic, view, trackMeta)
 
   return (
     <AtmosphereStage weather={weather}>
@@ -72,12 +57,50 @@ export function Player() {
           weather={weather}
           setWeather={setWeather}
           trackMeta={trackMeta}
-          playAndListen={playAndListen}
-          playKeepView={playKeepView}
+          playAndListen={cb.playAndListen}
+          playKeepView={cb.playKeepView}
+          importLocal={cb.importLocal}
         />
       </RoomScene>
     </AtmosphereStage>
   )
+}
+
+function usePlayCallbacks(
+  logic: PlayerLogic,
+  view: ReturnType<typeof useViewMode>,
+  trackMeta: TrackMeta,
+): {
+  readonly playAndListen: (s: ApiSong) => void
+  readonly playKeepView: (s: ApiSong) => void
+  readonly importLocal: (songs: readonly ApiSong[]) => void
+} {
+  const playAndListen = useCallback(
+    (song: ApiSong) => {
+      trackMeta.markUserInitiated()
+      logic.actions.playSong(song)
+      view.enterListen()
+    },
+    [logic.actions, view, trackMeta],
+  )
+  const playKeepView = useCallback(
+    (song: ApiSong) => {
+      trackMeta.markUserInitiated()
+      logic.actions.playSong(song)
+    },
+    [logic.actions, trackMeta],
+  )
+  // 导入本地: 第一首 playAndListen,其余 enqueue
+  const importLocal = useCallback(
+    (songs: readonly ApiSong[]) => {
+      if (songs.length === 0) return
+      const [first, ...rest] = songs
+      if (first !== undefined) playAndListen(first)
+      for (const s of rest) logic.actions.queueSong(s)
+    },
+    [playAndListen, logic.actions],
+  )
+  return { playAndListen, playKeepView, importLocal }
 }
 
 type ShellProps = {
@@ -92,6 +115,7 @@ type ShellProps = {
   readonly trackMeta: TrackMeta
   readonly playAndListen: (s: ApiSong) => void
   readonly playKeepView: (s: ApiSong) => void
+  readonly importLocal: (songs: readonly ApiSong[]) => void
 }
 
 function PlayerShell(p: ShellProps) {
@@ -103,6 +127,7 @@ function PlayerShell(p: ShellProps) {
           p.setSettingsOpen(true)
         }}
         onOpenCmdk={p.cmdk.toggle}
+        onImport={p.importLocal}
       />
       <SillSwitcher
         logic={p.logic}
@@ -285,10 +310,12 @@ function TopToolbar({
   language,
   onOpenSettings,
   onOpenCmdk,
+  onImport,
 }: {
   readonly language: LanguageHook
   readonly onOpenSettings: () => void
   readonly onOpenCmdk: () => void
+  readonly onImport: (songs: readonly ApiSong[]) => void
 }) {
   const { t } = language
   return (
@@ -302,6 +329,7 @@ function TopToolbar({
       >
         ⌕
       </button>
+      <ImportButton title={t('importLocal')} onImport={onImport} />
       <button
         type="button"
         className="tool-btn"

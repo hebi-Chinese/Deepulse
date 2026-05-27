@@ -22,6 +22,8 @@ const apiSongSchema = z.object({
   album: apiAlbumSchema.optional(),
   durationMs: z.number(),
   coverUrl: z.string().optional(),
+  // 本地导入歌:有 localUrl (blob URL) 时跳过 NCM fetch,直接喂 audio.src
+  // 不入 zod (后端永远不返回这字段),仅 frontend 内部用
 })
 
 const searchRespSchema = z.object({
@@ -61,7 +63,11 @@ const okSchema = z.object({ ok: z.boolean() })
 
 export type ApiArtist = z.infer<typeof apiArtistSchema>
 export type ApiAlbum = z.infer<typeof apiAlbumSchema>
-export type ApiSong = z.infer<typeof apiSongSchema>
+type ApiSongBase = z.infer<typeof apiSongSchema>
+export type ApiSong = ApiSongBase & {
+  // 仅本地导入时存在:blob URL,刷新即失效,不入 localStorage
+  readonly localUrl?: string
+}
 export type ApiLyric = z.infer<typeof lyricSchema>
 
 // ── 底层 fetch + zod ──
