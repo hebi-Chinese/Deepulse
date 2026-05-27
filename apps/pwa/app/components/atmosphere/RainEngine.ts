@@ -102,7 +102,7 @@ export function createRainEngine(): AtmosphereEngine {
         spawnGlass(glass, viewport, nowMs)
       }
       mergeGlass(glass, nowMs)
-      enqueueRipples(ripples, newRipples)
+      enqueueRipples(ripples, newRipples, nowMs)
       stepRipples(ripples, nowMs)
     },
 
@@ -285,9 +285,10 @@ function drawGlass(
 
 // ─── ripples ─────────────────────────────────────────────────────────────
 
-function enqueueRipples(ripples: Ripple[], spawns: readonly RippleSpawn[]): void {
-  for (const s of spawns) {
-    ripples.push({ x: s.x, y: s.y, r: 0, startMs: s.atMs })
+// 入队时改用引擎时钟,丢弃 spawn.atMs (它是 performance.now,跟 engine.nowMs 不同基)
+function enqueueRipples(ripples: Ripple[], spawns: readonly RippleSpawn[], nowMs: number): void {
+  for (const _s of spawns) {
+    ripples.push({ x: _s.x, y: _s.y, r: 0, startMs: nowMs })
   }
 }
 
