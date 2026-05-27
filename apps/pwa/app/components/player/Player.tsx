@@ -15,9 +15,12 @@ import { BrowseSill } from '../browse/BrowseSill'
 import { CommandPalette } from '../command/CommandPalette'
 import { useCommandPalette } from '../command/useCommandPalette'
 import { ListenSill } from '../listen/ListenSill'
+import { VolumeFloat } from '../listen/VolumeFloat'
 import { RoomScene } from '../room/RoomScene'
+import { WindowToggle } from '../room/WindowToggle'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { useLanguage } from '../settings/useLanguage'
+
 
 import { useAudioUnlock } from './useAudioUnlock'
 import { usePlayerLogic } from './usePlayerLogic'
@@ -109,6 +112,47 @@ function PlayerShell(p: ShellProps) {
         playAndListen={p.playAndListen}
         playKeepView={p.playKeepView}
       />
+      <BottomFloats p={p} />
+      <Overlays p={p} />
+    </>
+  )
+}
+
+// 左下统一关/开窗按钮 + Listen 时左下音量浮控
+function BottomFloats({ p }: { readonly p: ShellProps }) {
+  const isEn = p.language.t('settingsWeather') === 'Weather'
+  return (
+    <>
+      <WindowToggle
+        mode={p.view.mode}
+        language={p.language}
+        enterDisabled={p.logic.currentSong === undefined}
+        onEnter={() => {
+          if (p.logic.currentSong !== undefined) {
+            p.trackMeta.markUserInitiated()
+            p.view.enterListen()
+          }
+        }}
+        onExit={p.view.exitListen}
+      />
+      {p.view.mode === 'listen' ? (
+        <VolumeFloat
+          volume={p.logic.state.volume}
+          muted={p.logic.state.muted}
+          onChange={p.logic.actions.setVolume}
+          onToggleMute={p.logic.actions.toggleMute}
+          label={isEn ? 'Volume' : '音量'}
+          muteLabel={isEn ? 'Unmute' : '取消静音'}
+        />
+      ) : null}
+    </>
+  )
+}
+
+// 命令面板 + 设置抽屉
+function Overlays({ p }: { readonly p: ShellProps }) {
+  return (
+    <>
       <CommandPalette
         open={p.cmdk.open}
         onClose={() => {
@@ -158,7 +202,6 @@ function SillSwitcher(p: SwitcherProps) {
           p.trackMeta.markUserInitiated()
           p.logic.actions.handleNext()
         }}
-        onExit={p.view.exitListen}
         onPlay={p.playKeepView}
       />
     )

@@ -63,7 +63,6 @@ function Card({ children }: { readonly children: React.ReactNode }) {
 function NowPlayingTile({
   logic,
   language,
-  onPlayAndListen,
 }: {
   readonly logic: PlayerLogic
   readonly language: LanguageHook
@@ -94,15 +93,6 @@ function NowPlayingTile({
             {song.artists.map((a) => a.name).join(' · ')}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            onPlayAndListen(song)
-          }}
-          className="ml-2 px-4 py-2 text-sm rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/15"
-        >
-          {t('closeWindow')} ↘
-        </button>
       </div>
     </Card>
   )

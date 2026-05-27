@@ -134,8 +134,9 @@ function VolumeControl(props: {
   readonly onChange: (v: number) => void
   readonly onToggleMute: () => void
 }) {
+  // pr-3 给 slider thumb 留位 (Chrome 默认 thumb 会越界 ~10px,否则贴外溢出)
   return (
-    <div className="flex items-center gap-2 w-28">
+    <div className="flex items-center gap-2 w-32 pr-3">
       <button
         type="button"
         onClick={props.onToggleMute}
@@ -154,7 +155,7 @@ function VolumeControl(props: {
         onChange={(e) => {
           props.onChange(Number(e.target.value))
         }}
-        className="flex-1 accent-white"
+        className="flex-1 accent-white min-w-0"
       />
     </div>
   )

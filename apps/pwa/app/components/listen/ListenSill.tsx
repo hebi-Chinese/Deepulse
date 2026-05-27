@@ -34,7 +34,6 @@ type Props = {
   readonly onTogglePlay: () => void
   readonly onPrev: () => void
   readonly onNext: () => void
-  readonly onExit: () => void
   readonly onPlay: (s: ApiSong) => void
 }
 
@@ -66,7 +65,6 @@ export function ListenSill(props: Props) {
         onTogglePlay={props.onTogglePlay}
         onPrev={props.onPrev}
         onNext={props.onNext}
-        onExit={props.onExit}
       />
       <DjChat
         open={chatOpen}
@@ -143,44 +141,29 @@ type HudProps = {
   readonly onTogglePlay: () => void
   readonly onPrev: () => void
   readonly onNext: () => void
-  readonly onExit: () => void
 }
 
 function ListenHud(props: HudProps) {
+  // 退出按钮 (⊘ 开窗) 已经由全局 WindowToggle 接管,放在左下角,
+  // 跟 Browse 的 "关窗 ↘" 同位置同按钮统一体验。这里只剩 transport 浮控
   const { t } = props.language
   return (
-    <>
-      <div
-        className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 px-6 py-2 rounded-full"
-        style={{
-          backdropFilter: 'blur(12px)',
-          background: 'rgba(0,0,0,0.55)',
-          opacity: props.visible ? 0.92 : 0,
-          pointerEvents: props.visible ? 'auto' : 'none',
-          transition: 'opacity 240ms ease-out',
-        }}
-      >
-        <HudBtn label={t('listen')} onClick={props.onPrev}>⏮</HudBtn>
-        <HudBtn
-          label={props.playing ? '⏸' : '▶'}
-          onClick={props.onTogglePlay}
-          primary
-        >
-          {props.playing ? '⏸' : '▶'}
-        </HudBtn>
-        <HudBtn label={t('listen')} onClick={props.onNext}>⏭</HudBtn>
-      </div>
-
-      <button
-        type="button"
-        onClick={props.onExit}
-        className="fixed bottom-6 right-6 z-40 text-xs text-white/45 hover:text-white/85 transition-colors tracking-widest"
-        style={{ fontFamily: '"Source Han Serif SC", serif' }}
-        aria-label={t('openWindow')}
-      >
-        ⊘  {t('openWindow')}
-      </button>
-    </>
+    <div
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-6 px-6 py-2 rounded-full"
+      style={{
+        backdropFilter: 'blur(12px)',
+        background: 'rgba(0,0,0,0.55)',
+        opacity: props.visible ? 0.92 : 0,
+        pointerEvents: props.visible ? 'auto' : 'none',
+        transition: 'opacity 240ms ease-out',
+      }}
+    >
+      <HudBtn label={t('listen')} onClick={props.onPrev}>⏮</HudBtn>
+      <HudBtn label={props.playing ? '⏸' : '▶'} onClick={props.onTogglePlay} primary>
+        {props.playing ? '⏸' : '▶'}
+      </HudBtn>
+      <HudBtn label={t('listen')} onClick={props.onNext}>⏭</HudBtn>
+    </div>
   )
 }
 

@@ -744,7 +744,7 @@ body {
 .dj-chat-trigger {
   position: fixed;
   bottom: 32px;
-  left: 32px;
+  right: 32px;
   z-index: 60;
   width: 48px;
   height: 48px;
@@ -769,7 +769,7 @@ body {
 .dj-chat-panel {
   position: fixed;
   bottom: 96px;
-  left: 32px;
+  right: 32px;
   width: min(360px, 92vw);
   height: min(420px, 60vh);
   z-index: 60;
