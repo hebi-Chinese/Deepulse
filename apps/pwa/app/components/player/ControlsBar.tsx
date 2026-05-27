@@ -22,8 +22,8 @@ type Props = {
 
 export function ControlsBar(props: Props) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-bg-secondary border-t border-bg-primary px-6 py-3">
-      <div className="max-w-6xl mx-auto flex items-center gap-4">
+    <div className="fixed bottom-4 left-4 right-4 z-40">
+      <div className="max-w-6xl mx-auto flex items-center gap-4 px-5 py-3 rounded-2xl bg-white/8 backdrop-blur-2xl border border-white/12 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
         <TransportButtons
           onPrev={props.onPrev}
           onNext={props.onNext}
@@ -41,7 +41,7 @@ export function ControlsBar(props: Props) {
         <button
           type="button"
           onClick={props.onCycleMode}
-          className="text-xs text-text-secondary hover:text-accent"
+          className="text-xs text-white/65 hover:text-white px-2 py-1 rounded-md hover:bg-white/8 transition-colors min-w-[4rem]"
         >
           {MODE_LABEL[props.mode]}
         </button>
@@ -70,7 +70,7 @@ function TransportButtons(props: {
         type="button"
         onClick={props.onPrev}
         disabled={props.queueEmpty}
-        className="text-xl text-text-primary disabled:opacity-30 hover:text-accent"
+        className="text-xl text-white/75 disabled:opacity-25 hover:text-white transition-colors"
         aria-label="上一首"
       >
         ⏮
@@ -79,7 +79,7 @@ function TransportButtons(props: {
         type="button"
         onClick={props.onTogglePlay}
         disabled={!props.hasSong}
-        className="text-2xl text-text-primary disabled:opacity-30 hover:text-accent"
+        className="text-3xl text-white disabled:opacity-25 hover:scale-110 transition-transform w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20"
         aria-label={props.playing ? '暂停' : '播放'}
       >
         {props.playing ? '⏸' : '▶'}
@@ -88,7 +88,7 @@ function TransportButtons(props: {
         type="button"
         onClick={props.onNext}
         disabled={props.queueEmpty}
-        className="text-xl text-text-primary disabled:opacity-30 hover:text-accent"
+        className="text-xl text-white/75 disabled:opacity-25 hover:text-white transition-colors"
         aria-label="下一首"
       >
         ⏭
@@ -104,8 +104,8 @@ function SeekSlider(props: {
   readonly onSeek: (sec: number) => void
 }) {
   return (
-    <div className="flex-1 flex items-center gap-2">
-      <span className="text-xs text-text-muted w-12 text-right">
+    <div className="flex-1 flex items-center gap-3">
+      <span className="text-xs text-white/55 w-10 text-right tabular-nums">
         {formatTime(props.currentTimeSec)}
       </span>
       <input
@@ -119,9 +119,11 @@ function SeekSlider(props: {
           props.onSeek(Number(e.target.value))
         }}
         disabled={props.disabled}
-        className="flex-1 accent-accent"
+        className="flex-1 accent-white"
       />
-      <span className="text-xs text-text-muted w-12">{formatTime(props.durationSec)}</span>
+      <span className="text-xs text-white/55 w-10 tabular-nums">
+        {formatTime(props.durationSec)}
+      </span>
     </div>
   )
 }
@@ -133,11 +135,12 @@ function VolumeControl(props: {
   readonly onToggleMute: () => void
 }) {
   return (
-    <div className="flex items-center gap-2 w-32">
+    <div className="flex items-center gap-2 w-28">
       <button
         type="button"
         onClick={props.onToggleMute}
-        className="text-text-secondary hover:text-accent"
+        className="text-white/70 hover:text-white transition-colors text-sm"
+        aria-label={props.muted ? '取消静音' : '静音'}
       >
         {props.muted ? '🔇' : '🔊'}
       </button>
@@ -151,7 +154,7 @@ function VolumeControl(props: {
         onChange={(e) => {
           props.onChange(Number(e.target.value))
         }}
-        className="flex-1 accent-accent"
+        className="flex-1 accent-white"
       />
     </div>
   )

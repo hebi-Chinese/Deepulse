@@ -41,11 +41,11 @@ type Ripple = {
 
 // ─── 物理 / 视觉常量 ──────────────────────────────────────────────────────
 
-const DROPS_PER_1000PX = 0.22 // 每 1000 px² 一滴 → 1920×1080 ≈ 460 滴 (按 3 层均分)
-const LAYER_SPEEDS: readonly [number, number, number] = [180, 360, 620] // px/s
-const LAYER_LENS: readonly [number, number, number] = [6, 10, 16]
-const LAYER_ALPHAS: readonly [number, number, number] = [0.18, 0.32, 0.55]
-const LAYER_WIDTHS: readonly [number, number, number] = [0.6, 0.9, 1.3]
+const DROPS_PER_1000PX = 0.35 // 每 1000 px² 一滴 → 1920×1080 ≈ 720 滴
+const LAYER_SPEEDS: readonly [number, number, number] = [200, 420, 700] // px/s
+const LAYER_LENS: readonly [number, number, number] = [8, 14, 22]
+const LAYER_ALPHAS: readonly [number, number, number] = [0.35, 0.55, 0.85]
+const LAYER_WIDTHS: readonly [number, number, number] = [0.9, 1.3, 1.8]
 
 const WIND_BASE_TILT = 0.12 // 默认风向 (右下倾)
 const WIND_POINTER_GAIN = 0.4 // 鼠标 x 偏移对风向影响
@@ -162,19 +162,22 @@ function stepDrops(drops: RainDrop[], dt: number, tilt: number, vp: Viewport): v
 }
 
 function drawDrops(ctx: CanvasRenderingContext2D, drops: readonly RainDrop[]): void {
-  // 按 layer 分批描线,共享 stroke style 减少状态切换
+  // lighter 合成模式: 雨滴亮色叠加,无论背景什么色调都明显可见 (模拟反光感)
+  const prevOp = ctx.globalCompositeOperation
+  ctx.globalCompositeOperation = 'lighter'
+  ctx.lineCap = 'round'
   for (let layer = 0; layer < 3; layer++) {
     ctx.beginPath()
     ctx.lineWidth = LAYER_WIDTHS[layer as 0 | 1 | 2]
-    ctx.strokeStyle = `rgba(180,210,255,${String(LAYER_ALPHAS[layer as 0 | 1 | 2])})`
+    ctx.strokeStyle = `rgba(220,235,255,${String(LAYER_ALPHAS[layer as 0 | 1 | 2])})`
     for (const d of drops) {
       if (d.layer !== layer) continue
       ctx.moveTo(d.x, d.y)
-      // 雨滴方向跟着 vy + tilt,简化为竖直主导 + 小幅 x 偏
       ctx.lineTo(d.x - d.len * 0.15, d.y - d.len)
     }
     ctx.stroke()
   }
+  ctx.globalCompositeOperation = prevOp
 }
 
 function pointerWind(pointer: Pointer, vp: Viewport): number {
