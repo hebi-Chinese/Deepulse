@@ -26,7 +26,18 @@ type SpawnOptions = {
   readonly format: 'json' | 'stream-json'
   readonly systemPrompt: string | undefined
   readonly jsonSchema?: string
+  readonly maxTokens?: number
   readonly signal?: AbortSignal
+}
+
+// 防御性: execa 用 execFile 不会有 shell injection,但 user-controlled value
+// 如果以 '--' 开头可能被 CLI argparse 误解为 flag (吞掉后续 value)。
+// 拒绝任何以 '--' 开头的 value;调用方应该用 trusted constant 或先 trim/escape
+function assertSafeFlagValue(field: string, value: string): string {
+  if (value.startsWith('--')) {
+    throw new Error(`brain.spawn: ${field} starts with '--' (CLI flag confusion risk)`)
+  }
+  return value
 }
 
 export class ClaudeCodeBrain implements IBrain {
@@ -41,6 +52,8 @@ export class ClaudeCodeBrain implements IBrain {
       format: 'stream-json',
       systemPrompt,
       ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+      ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
+      // temperature: claude CLI 不支持透传,暂忽略 (留在 BrainGenerateOptions 给将来其他 IBrain 实现用)
     })
 
     // 用 try/finally 保证: 无论 caller break 出 for await 还是跑完,
@@ -77,6 +90,7 @@ export class ClaudeCodeBrain implements IBrain {
       systemPrompt,
       jsonSchema,
       ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+      ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
     })
     const result = await child
     if (result.exitCode !== 0) {
@@ -93,12 +107,15 @@ export class ClaudeCodeBrain implements IBrain {
     const args: string[] = ['-p', '--output-format', opts.format]
     if (opts.format === 'stream-json') args.push('--verbose')
     if (opts.systemPrompt !== undefined && opts.systemPrompt.length > 0) {
-      args.push('--system-prompt', opts.systemPrompt)
+      args.push('--system-prompt', assertSafeFlagValue('systemPrompt', opts.systemPrompt))
     }
     if (opts.jsonSchema !== undefined) {
-      args.push('--json-schema', opts.jsonSchema)
+      args.push('--json-schema', assertSafeFlagValue('jsonSchema', opts.jsonSchema))
     }
-    args.push(prompt)
+    if (opts.maxTokens !== undefined) {
+      args.push('--max-tokens', String(opts.maxTokens))
+    }
+    args.push(assertSafeFlagValue('prompt', prompt))
 
     return execa(this.bin, args, {
       maxBuffer: DEFAULT_MAX_BUFFER,

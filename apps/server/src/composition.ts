@@ -57,13 +57,18 @@ export type Container = {
   readonly taste: ITasteRepo
 }
 
-// migrations 文件源在 packages/infrastructure/src/db/migrations
+// migrations 路径解析:
+// 1) env.MIGRATIONS_DIR 显式指定 (prod build 必须给,否则 dist 下相对路径会跑偏)
+// 2) fallback 走 dev 时源码相对路径 (apps/server/src → packages/infrastructure/src/db/migrations)
 const currentDir = dirname(fileURLToPath(import.meta.url))
-const MIGRATIONS_DIR = resolve(currentDir, '../../../packages/infrastructure/src/db/migrations')
+const DEFAULT_MIGRATIONS_DIR = resolve(
+  currentDir,
+  '../../../packages/infrastructure/src/db/migrations',
+)
 
 export function buildContainer(env: Env): Container {
   const dbClient = createDb(env.DATABASE_URL)
-  dbClient.applyMigrations(MIGRATIONS_DIR)
+  dbClient.applyMigrations(env.MIGRATIONS_DIR ?? DEFAULT_MIGRATIONS_DIR)
 
   const accountRepo = createNcmAccountRepo(dbClient)
 

@@ -11,19 +11,32 @@ import { ncmAccount, ncmSnapshot } from '../schema.js'
 import type { DbClient } from '../client.js'
 import type { INcmSnapshotRepo, NcmUserSnapshot } from '@claudio/application'
 
-// 边界校验: DB 里的 JSON 反序列化时,至少保证顶层 shape 合法
+// 边界校验: DB 里的 JSON 反序列化时,至少保证顶层 shape + 关键嵌套字段合法
 // 完整 schema 等 v1.5 (应用层把 NcmUserSnapshot 拆 zod 后再共享)
+const playlistMetaShape = z.object({
+  id: z.string(),
+  name: z.string(),
+  songCount: z.number(),
+  isCreated: z.boolean(),
+  coverUrl: z.string().optional(),
+})
+const songShape = z.object({
+  id: z.string(),
+  title: z.string(),
+  artists: z.array(z.object({ id: z.string(), name: z.string() })),
+})
+const recentPlayShape = z.object({ songId: z.string(), playCount: z.number() })
 const snapshotShapeSchema = z.object({
   userId: z.string(),
   userName: z.string(),
   vipType: z.number(),
   level: z.number(),
   likedSongIds: z.array(z.string()),
-  playlists: z.array(z.unknown()),
-  dailyRecommendations: z.array(z.unknown()),
-  heartMode: z.array(z.unknown()),
+  playlists: z.array(playlistMetaShape),
+  dailyRecommendations: z.array(songShape.passthrough()),
+  heartMode: z.array(songShape.passthrough()),
   stylePreferences: z.array(z.string()),
-  recentPlayed: z.array(z.unknown()),
+  recentPlayed: z.array(recentPlayShape),
   fmTrashSongIds: z.array(z.string()),
   snapshotAtMs: z.number(),
 })

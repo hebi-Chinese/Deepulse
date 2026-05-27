@@ -20,6 +20,10 @@ const envSchema = z.object({
 
   // 网易云（可选 cookie；不传则只能播放无版权限制的歌）
   NCM_COOKIE: z.string().optional(),
+
+  // drizzle 迁移目录 — dev 走源码路径,prod build 必须显式注入
+  // (默认值是从 dist 出发的 src 相对路径,仅 dev 时有意义)
+  MIGRATIONS_DIR: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

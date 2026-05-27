@@ -312,7 +312,9 @@ export class NcmClient implements INcmClient {
 
   private async pullSnapshotRaw(): Promise<SnapshotRaw> {
     const [detail, like, play, rec, style, record, cloud] = await Promise.all([
-      callNcm(() => userDetail(this.withCookie({ uid: '0' })), userDetailBodySchema, 'userDetail'),
+      // uid 全部用 number 0 — NCM 库实际接受 number,跟下面 likelist/userPlaylist/userRecord
+      // 保持一致;之前这里 '0' (string) 是 schema 漏配
+      callNcm(() => userDetail(this.withCookie({ uid: 0 })), userDetailBodySchema, 'userDetail'),
       callNcm(() => likelist(this.withCookie({ uid: 0 })), likelistBodySchema, 'likelist'),
       callNcm(
         () => userPlaylist(this.withCookie({ uid: 0, limit: 200 })),
