@@ -185,10 +185,11 @@ function syncCanvasSize(
   ctx: CanvasRenderingContext2D,
   vp: Viewport,
 ): void {
+  // 只写 bitmap pixel 尺寸 (canvas.width/height), 不再写 inline style.width/height —
+  // 后者会覆盖外部 CSS class (比如 .browse-weather-canvas 的 var(--browse-weather-w)),
+  // 导致 adjust 模式改 CSS var 时 canvas 不响应; CSS 决定 display 尺寸, JS 只决定 bitmap 密度
   canvas.width = Math.round(vp.width * vp.dpr)
   canvas.height = Math.round(vp.height * vp.dpr)
-  canvas.style.width = `${String(vp.width)}px`
-  canvas.style.height = `${String(vp.height)}px`
   ctx.setTransform(vp.dpr, 0, 0, vp.dpr, 0, 0)
 }
 

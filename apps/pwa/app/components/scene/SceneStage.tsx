@@ -325,6 +325,8 @@ export function useListenWeatherAdjuster(): boolean {
       if (handleLwKey(e, vars)) {
         e.preventDefault()
         applyLwVars(vars)
+        // AtmosphereCanvas inline px 锁了 width/height, 必须重派 resize 才会重测
+        window.dispatchEvent(new Event('resize'))
       }
     }
     applyLwVars(vars)

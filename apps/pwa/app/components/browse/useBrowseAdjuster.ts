@@ -31,6 +31,9 @@ export function useBrowseAdjuster(): boolean {
       if (handleAdjustKey(e, vars)) {
         e.preventDefault()
         applyBrowseVars(vars)
+        // AtmosphereCanvas 用 inline px 锁了 canvas.style.width/height,
+        // 优先级高于 CSS var, 所以光改 CSS 不够 — 派发 resize 让它重测重写
+        window.dispatchEvent(new Event('resize'))
       }
     }
     applyBrowseVars(vars)
