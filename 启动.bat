@@ -3,19 +3,19 @@ title Claudio Dev Server
 cd /d "%~dp0"
 
 rem ============================================
-rem  CONFIG â€” fork ç”¨æˆ·æ”¹è¿™ä¸¤è¡Œå³å¯
+rem  CONFIG ¡ª fork ÓÃ»§¸ÄÕâÁ½ĞĞ¼´¿É
 rem    BRAIN: claude / deepseek / ollama / openai
 rem    TTS  : mock / gpt-sovits / voxcpm
 rem ============================================
 set BRAIN=deepseek
 set TTS=mock
 
-rem ---- API key å…œåº• (ç³»ç»Ÿ env å·²å®šä¹‰åˆ™è·³è¿‡, ä¸è¦†ç›–ä½ çš„çœŸ key) ----
+rem ---- API key ¶µµ× (ÏµÍ³ env ÒÑ¶¨ÒåÔòÌø¹ı, ²»¸²¸ÇÄãµÄÕæ key) ----
 if not defined DEEPSEEK_API_KEY set "DEEPSEEK_API_KEY=sk-PUT-YOUR-DEEPSEEK-KEY-HERE"
 if not defined OPENAI_API_KEY   set "OPENAI_API_KEY=sk-PUT-YOUR-OPENAI-KEY-HERE"
 
-rem ---- é¢„è®¾æ˜ å°„ (ä¸€èˆ¬ä¸ç”¨æ”¹) ----
-rem ---- ç”¨ set "VAR=val" å½¢å¼é¿å… ) å‰ç©ºæ ¼è¢«åƒè¿› value ----
+rem ---- Ô¤ÉèÓ³Éä (Ò»°ã²»ÓÃ¸Ä) ----
+rem ---- ÓÃ set "VAR=val" ĞÎÊ½±ÜÃâ ) Ç°¿Õ¸ñ±»³Ô½ø value ----
 if /I "%BRAIN%"=="claude"   set "BRAIN_TYPE=claude"
 if /I "%BRAIN%"=="deepseek" call :setDeepseek
 if /I "%BRAIN%"=="ollama"   call :setOllama
