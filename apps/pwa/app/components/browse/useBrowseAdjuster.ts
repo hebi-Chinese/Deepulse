@@ -17,7 +17,8 @@ type BrowseVars = {
   h: number // %
 }
 
-const DEFAULT_VARS: BrowseVars = { left: 20, top: 5, w: 60, h: 45 }
+// 跟 globals.css .browse-weather-canvas 的 var fallback 一致 — 主人 ?adjust=browse 拉定
+const DEFAULT_VARS: BrowseVars = { left: 21.4, top: -0.6, w: 52.5, h: 52.6 }
 
 export function useBrowseAdjuster(): boolean {
   const [on, setOn] = useState(false)
@@ -56,9 +57,9 @@ function applyBrowseVars(v: BrowseVars): void {
 }
 
 function handleAdjustKey(e: KeyboardEvent, v: BrowseVars): boolean {
-  // step 单位是 % (canvas 占视口比例大), 1.0 默认 / 3.0 shift 才看得出
-  const moveStep = e.shiftKey ? 3 : 1
-  const sizeStep = e.shiftKey ? 3 : 1
+  // 微调模式 — 默认 0.2/0.1, Shift 大步 1.0/0.5
+  const moveStep = e.shiftKey ? 1.0 : 0.2
+  const sizeStep = e.shiftKey ? 0.5 : 0.1
   // 方向键用 e.key (ArrowLeft 等不受 IME 影响)
   if (handleMoveKey(e.key, v, moveStep)) return true
   // 缩放键用 e.code (Equal/Minus/Bracket/Comma/Period 是物理键位置, 不受

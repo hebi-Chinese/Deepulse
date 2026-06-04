@@ -5,7 +5,7 @@
 //   底图 → 窗户(风铃/雨/凝水) → 月光带 → 尘埃 → 真实麦 → DJ 字幕 → viz 律动 → UI chrome
 // audio 元素仍由 Player 顶层托管, 这里只消费 state + callback
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { AtmosphereCanvas } from '../atmosphere/AtmosphereCanvas'
 import { DjChat } from '../listen/DjChat'
@@ -299,17 +299,42 @@ function VinylAdjustHud() {
   )
 }
 
-// ─── ?adjust=listen 调试模式 (Listen 模式的天气 canvas 矩形) ─────────────
+// ─── ?adjust=listen 调试模式 (Listen 透视梯形 canvas) ────────────────────
 // 触发: URL 加 ?adjust=listen
 // 操作:
-//   方向键      移位 (Shift = 大步 1%, 默认 0.2%)
-//   + / -       同比缩放
-//   [ / ]       只调宽
-//   , / .       只调高
+//   方向键      移位 (Shift = 大步 1%, 默认 0.2%) — 没选角时移整体, 选了角时只移那个角
+//   + / -       同比缩放整个 bounding rect
+//   [ / ]       只调 bounding 宽
+//   , / .       只调 bounding 高
+//   1 / 2 / 3 / 4   选角 TL / TR / BR / BL (再按一次同号取消)
+//   0           取消选角
 //   P           console.log + alert 当前 CSS
 
-type LWVars = { left: number; top: number; w: number; h: number }
-const LW_DEFAULT: LWVars = { left: 3, top: 0, w: 52, h: 65 }
+type Corner = 'tl' | 'tr' | 'br' | 'bl'
+type CornerOffset = { x: number; y: number } // 单位 %
+type LWVars = {
+  left: number
+  top: number
+  w: number
+  h: number
+  // 4 角偏移 — 默认全 0 = 完美矩形, 主人调到梯形对齐斜窗户
+  corners: Record<Corner, CornerOffset>
+  selected: Corner | null
+}
+// 跟 globals.css .scene-weather-canvas 的 var fallback 一致 — 主人 ?adjust=listen 拉定的斜窗户梯形
+const LW_DEFAULT: LWVars = {
+  left: -2.6,
+  top: 0,
+  w: 52,
+  h: 65,
+  corners: {
+    tl: { x: -16.8, y: -52.2 },
+    tr: { x: 66.8, y: -42.2 },
+    br: { x: 66.4, y: 8.6 },
+    bl: { x: -17.2, y: 46.6 },
+  },
+  selected: null,
+}
 
 // 注: 由 Player.tsx 调用 — Browse / Listen 都激活;
 // canvas .scene-weather-canvas 只在 Listen 模式下挂载, 但 CSS var 全局生效
@@ -346,20 +371,69 @@ function applyLwVars(v: LWVars): void {
   r.style.setProperty('--listen-weather-top', `${v.top.toFixed(2)}%`)
   r.style.setProperty('--listen-weather-w', `${v.w.toFixed(2)}%`)
   r.style.setProperty('--listen-weather-h', `${v.h.toFixed(2)}%`)
+  // 4 角偏移 — 每个角相对它在 bounding rect 的天然位置的偏移量, 单位 %
+  ;(['tl', 'tr', 'br', 'bl'] as const).forEach((c) => {
+    r.style.setProperty(`--listen-weather-${c}-x`, `${v.corners[c].x.toFixed(2)}%`)
+    r.style.setProperty(`--listen-weather-${c}-y`, `${v.corners[c].y.toFixed(2)}%`)
+  })
 }
 
 function handleLwKey(e: KeyboardEvent, v: LWVars): boolean {
-  // 跟 useBrowseAdjuster 同理 — canvas 占视口比例大, step 默认 1%
-  const moveStep = e.shiftKey ? 3 : 1
-  const sizeStep = e.shiftKey ? 3 : 1
-  if (handleMoveKey(e.key, v, moveStep)) return true
-  // e.code 物理位置不受 IME 全角/半角影响 (复用 vinyl 那套 zoom/width/heightDelta)
+  // 微调模式 — 默认 0.2/0.1, Shift 大步 1.0/0.5
+  const moveStep = e.shiftKey ? 1.0 : 0.2
+  const sizeStep = e.shiftKey ? 0.5 : 0.1
+  // 数字键 1/2/3/4 选角, 0 取消选角
+  const corner = digitToCorner(e.code)
+  if (corner !== undefined) {
+    v.selected = v.selected === corner ? null : corner
+    return true
+  }
+  if (e.code === 'Digit0' || e.code === 'Numpad0') {
+    v.selected = null
+    return true
+  }
+  // 方向键: 选了角就移那个角, 没选角就移整个 bounding rect
+  if (handleLwMoveKey(e.key, v, moveStep)) return true
+  // 缩放键只动 bounding rect (跟选角无关)
   if (handleLwSizeKey(e.code, v, sizeStep)) return true
   if (e.code === 'KeyP') {
     printLwVars(v)
     return true
   }
   return false
+}
+
+function digitToCorner(code: string): Corner | undefined {
+  if (code === 'Digit1' || code === 'Numpad1') return 'tl'
+  if (code === 'Digit2' || code === 'Numpad2') return 'tr'
+  if (code === 'Digit3' || code === 'Numpad3') return 'br'
+  if (code === 'Digit4' || code === 'Numpad4') return 'bl'
+  return undefined
+}
+
+function handleLwMoveKey(key: string, v: LWVars, step: number): boolean {
+  const dx = arrowDx(key, step)
+  const dy = arrowDy(key, step)
+  if (dx === 0 && dy === 0) return false
+  if (v.selected !== null) {
+    v.corners[v.selected].x += dx
+    v.corners[v.selected].y += dy
+  } else {
+    v.left += dx
+    v.top += dy
+  }
+  return true
+}
+
+function arrowDx(key: string, step: number): number {
+  if (key === 'ArrowLeft') return -step
+  if (key === 'ArrowRight') return step
+  return 0
+}
+function arrowDy(key: string, step: number): number {
+  if (key === 'ArrowUp') return -step
+  if (key === 'ArrowDown') return step
+  return 0
 }
 
 function handleLwSizeKey(code: string, v: LWVars, step: number): boolean {
@@ -383,7 +457,14 @@ function handleLwSizeKey(code: string, v: LWVars, step: number): boolean {
 }
 
 function printLwVars(v: LWVars): void {
-  const css = `--listen-weather-left: ${v.left.toFixed(1)}%; --listen-weather-top: ${v.top.toFixed(1)}%; --listen-weather-w: ${v.w.toFixed(1)}%; --listen-weather-h: ${v.h.toFixed(1)}%;`
+  const rect = `--listen-weather-left: ${v.left.toFixed(1)}%; --listen-weather-top: ${v.top.toFixed(1)}%; --listen-weather-w: ${v.w.toFixed(1)}%; --listen-weather-h: ${v.h.toFixed(1)}%;`
+  const corners = (['tl', 'tr', 'br', 'bl'] as const)
+    .map(
+      (c) =>
+        `--listen-weather-${c}-x: ${v.corners[c].x.toFixed(1)}%; --listen-weather-${c}-y: ${v.corners[c].y.toFixed(1)}%;`,
+    )
+    .join(' ')
+  const css = `${rect} ${corners}`
   // eslint-disable-next-line no-console -- intentional: dev adjust mode
   console.log('[listen-weather-adjust]', css)
   window.alert(css)
@@ -393,10 +474,85 @@ export function ListenWeatherAdjustHud() {
   return (
     <div className="adjust-hud" aria-hidden="true">
       <div>
-        listen-weather adjust · <kbd>arrows</kbd> move · <kbd>+/-</kbd> scale · <kbd>[/]</kbd> width
-        · <kbd>,/.</kbd> height · <kbd>shift</kbd> = big step · <kbd>P</kbd> print
+        listen-weather adjust · <kbd>1234</kbd> pick corner · <kbd>0</kbd> all · <kbd>arrows</kbd>{' '}
+        move · <kbd>+/-</kbd> scale · <kbd>[/]</kbd> width · <kbd>,/.</kbd> height ·{' '}
+        <kbd>shift</kbd> = big step · <kbd>P</kbd> print
       </div>
     </div>
+  )
+}
+
+// SVG 多边形 overlay — 描红虚线梯形 + 4 个角点圆圈, 通过读 :root CSS var 实时更新
+// 监听 window resize 事件 (hook 改 var 后也派了 resize) 来重画
+type CornerRefs = Record<Corner, SVGCircleElement | null>
+
+function readCornerCoords(): Record<Corner, CornerOffset> {
+  const r = document.documentElement
+  const read = (name: string): number => parseFloat(r.style.getPropertyValue(name) || '0')
+  return {
+    tl: { x: read('--listen-weather-tl-x'), y: read('--listen-weather-tl-y') },
+    tr: { x: 100 + read('--listen-weather-tr-x'), y: read('--listen-weather-tr-y') },
+    br: { x: 100 + read('--listen-weather-br-x'), y: 100 + read('--listen-weather-br-y') },
+    bl: { x: read('--listen-weather-bl-x'), y: 100 + read('--listen-weather-bl-y') },
+  }
+}
+
+function paintOutline(
+  poly: SVGPolygonElement | null,
+  circles: CornerRefs,
+  c: Record<Corner, CornerOffset>,
+): void {
+  const fmt = (n: number): string => n.toFixed(2)
+  poly?.setAttribute(
+    'points',
+    `${fmt(c.tl.x)},${fmt(c.tl.y)} ${fmt(c.tr.x)},${fmt(c.tr.y)} ${fmt(c.br.x)},${fmt(c.br.y)} ${fmt(c.bl.x)},${fmt(c.bl.y)}`,
+  )
+  ;(['tl', 'tr', 'br', 'bl'] as const).forEach((k) => {
+    const el = circles[k]
+    if (el === null) return
+    el.setAttribute('cx', fmt(c[k].x))
+    el.setAttribute('cy', fmt(c[k].y))
+  })
+}
+
+export function ListenWeatherOutline() {
+  const polygonRef = useRef<SVGPolygonElement | null>(null)
+  const circleRefs = useRef<CornerRefs>({ tl: null, tr: null, br: null, bl: null })
+  useEffect(() => {
+    const update = (): void => {
+      paintOutline(polygonRef.current, circleRefs.current, readCornerCoords())
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+  return (
+    <svg
+      className="listen-weather-outline"
+      viewBox="-50 -50 200 200"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <polygon
+        ref={polygonRef}
+        fill="none"
+        stroke="#ff3060"
+        strokeWidth="0.6"
+        strokeDasharray="2 1"
+      />
+      {(['tl', 'tr', 'br', 'bl'] as const).map((k) => (
+        <circle
+          key={k}
+          ref={(el) => {
+            circleRefs.current[k] = el
+          }}
+          r="1.6"
+          fill="#ff3060"
+        />
+      ))}
+    </svg>
   )
 }
 

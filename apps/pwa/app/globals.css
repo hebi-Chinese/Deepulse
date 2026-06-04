@@ -968,14 +968,13 @@ nextjs-portal {
   overflow: hidden;
 }
 
-/* Browse 天气粒子 — search-bg.png 里窗户区域, 默认值是目测起点;
-   ?adjust=browse 时键盘可实时拖, 主人定数后烧进这里 */
+/* Browse 天气粒子 — 跟 search-bg.png 里窗户矩形对齐 (主人 ?adjust=browse 拉定) */
 .browse-weather-canvas {
   position: fixed;
-  left: var(--browse-weather-left, 20%);
-  top: var(--browse-weather-top, 5%);
-  width: var(--browse-weather-w, 60%);
-  height: var(--browse-weather-h, 45%);
+  left: var(--browse-weather-left, 21.4%);
+  top: var(--browse-weather-top, -0.6%);
+  width: var(--browse-weather-w, 52.5%);
+  height: var(--browse-weather-h, 52.6%);
   pointer-events: none;
   z-index: 3;
 }
@@ -1019,21 +1018,38 @@ nextjs-portal {
   pointer-events: none;
 }
 
-/* Canvas 粒子层 — 跟 .scene-window 同矩形位置, 不裁形状 (粒子在矩形内充满)
-   屋内位置由 .scene-foreground 在更高 z-index 用反向 mask 遮挡
-   ?adjust=listen 时键盘可实时拖, 主人定数后烧进这里 */
+/* Canvas 粒子层 — bounding rect + clip-path 梯形遮罩, 跟 listen-bg.png 斜窗户对齐
+   主人 ?adjust=listen 1234 选角 + 方向键拉定 (主人 2026-06-04) */
 .scene-weather-canvas {
   position: fixed;
-  left: var(--listen-weather-left, 3%);
+  left: var(--listen-weather-left, -2.6%);
   top: var(--listen-weather-top, 0);
   width: var(--listen-weather-w, 52%);
   height: var(--listen-weather-h, 65%);
+  clip-path: polygon(
+    calc(0% + var(--listen-weather-tl-x, -16.8%)) calc(0% + var(--listen-weather-tl-y, -52.2%)),
+    calc(100% + var(--listen-weather-tr-x, 66.8%)) calc(0% + var(--listen-weather-tr-y, -42.2%)),
+    calc(100% + var(--listen-weather-br-x, 66.4%)) calc(100% + var(--listen-weather-br-y, 8.6%)),
+    calc(0% + var(--listen-weather-bl-x, -17.2%)) calc(100% + var(--listen-weather-bl-y, 46.6%))
+  );
   z-index: 3;
   pointer-events: none;
 }
+/* adjust 模式下 canvas 提到 foreground 之上让粒子可见, outline 由 SVG overlay 接管 */
 [data-adjust-mode='listen'] .scene-weather-canvas {
-  outline: 2px dashed #ff3060;
-  outline-offset: -1px;
+  z-index: 10;
+}
+
+/* SVG 梯形描线 — 跟 canvas 同矩形, viewBox 留余地给负偏移 */
+.listen-weather-outline {
+  position: fixed;
+  left: var(--listen-weather-left, -2.6%);
+  top: var(--listen-weather-top, 0);
+  width: var(--listen-weather-w, 52%);
+  height: var(--listen-weather-h, 65%);
+  z-index: 11;
+  pointer-events: none;
+  overflow: visible;
 }
 
 /* 前景遮罩层 — 复用 listen-bg.png 同图, 但反向 mask 把窗户区域抠透明

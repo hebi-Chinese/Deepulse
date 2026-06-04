@@ -17,7 +17,12 @@ import { useBrowseAdjuster } from '../browse/useBrowseAdjuster'
 import { CommandPalette } from '../command/CommandPalette'
 import { useCommandPalette } from '../command/useCommandPalette'
 import { WindowToggle } from '../room/WindowToggle'
-import { ListenWeatherAdjustHud, SceneStage, useListenWeatherAdjuster } from '../scene/SceneStage'
+import {
+  ListenWeatherAdjustHud,
+  ListenWeatherOutline,
+  SceneStage,
+  useListenWeatherAdjuster,
+} from '../scene/SceneStage'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { useLanguage } from '../settings/useLanguage'
 
@@ -68,7 +73,12 @@ export function Player() {
       ) : (
         <BrowseStageView p={shellProps} />
       )}
-      {adjustingLw ? <ListenWeatherAdjustHud /> : null}
+      {adjustingLw ? (
+        <>
+          <ListenWeatherAdjustHud />
+          {view.mode === 'listen' ? <ListenWeatherOutline /> : null}
+        </>
+      ) : null}
     </>
   )
 }
