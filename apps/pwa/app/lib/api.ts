@@ -130,8 +130,11 @@ export const api = {
 
   loginQrCreate: () => post('/api/login/qr/create', qrCreateSchema),
 
-  loginQrCheck: (unikey: string) =>
-    get(`/api/login/qr/check?unikey=${encodeURIComponent(unikey)}`, qrCheckSchema),
+  loginQrCheck: (unikey: string, persist = false) =>
+    get(
+      `/api/login/qr/check?unikey=${encodeURIComponent(unikey)}&persist=${persist ? '1' : '0'}`,
+      qrCheckSchema,
+    ),
 
   loginStatus: () => get('/api/login/status', loginStatusSchema),
 

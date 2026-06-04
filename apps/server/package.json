@@ -28,6 +28,7 @@
     "@claudio/configs": "workspace:*",
     "@types/node": "catalog:",
     "@types/node-cron": "catalog:",
+    "@types/ws": "^8.18.1",
     "eslint": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

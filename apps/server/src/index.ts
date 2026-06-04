@@ -3,9 +3,11 @@
 
 import { createLogger, loadEnv } from '@claudio/shared'
 import cors from '@fastify/cors'
+import websocketPlugin from '@fastify/websocket'
 import Fastify from 'fastify'
 
 import { createDiscoverPlugin } from './api/discover.js'
+import { createDjWsPlugin } from './api/dj-ws.js'
 import { createDjPlugin } from './api/dj.js'
 import { createFeedbackPlugin } from './api/feedback.js'
 import { createLoginPlugin } from './api/login.js'
@@ -40,6 +42,11 @@ async function main(): Promise<void> {
     credentials: true,
   })
 
+  // WS 必须在挂 route 之前 register; M3 流式 DJ 对话端点走 /api/dj/chat-ws
+  // maxPayload 64KB — Zod 内层还有 text.max(500) 但内存防护必须在 framing 层
+  // (默认 100MB 单帧, 一个误操作就能 OOM)
+  await app.register(websocketPlugin, { options: { maxPayload: 64 * 1024 } })
+
   app.get('/health', () => ({ status: 'ok', version: '0.1.0' }))
 
   await app.register(createSearchPlugin(container))
@@ -51,6 +58,7 @@ async function main(): Promise<void> {
   await app.register(createPlaylistPlugin(container))
   await app.register(createPlaysPlugin(container))
   await app.register(createDjPlugin(container))
+  await app.register(createDjWsPlugin(container))
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info({ signal }, 'shutting down')

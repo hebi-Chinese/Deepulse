@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // Snapshot API: 看快照状态 / 拉新快照
+// 编排走 refreshUserSnapshot use case, route 层只做 HTTP framing
+
+import { refreshUserSnapshot } from '@claudio/application'
+
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'
-
 
 export function createSnapshotPlugin(container: Container): FastifyPluginAsync {
   return async (app) => {
@@ -22,8 +25,11 @@ export function createSnapshotPlugin(container: Container): FastifyPluginAsync {
       if (container.ncm.getCookie() === undefined) {
         return reply.code(401).send({ error: 'not logged in' })
       }
-      const snap = await container.ncm.fetchUserSnapshot()
-      await container.snapshot.save(snap)
+      const result = await refreshUserSnapshot({
+        ncm: container.ncm,
+        snapshot: container.snapshot,
+      })
+      const { snapshot: snap } = result
       return {
         ok: true,
         snapshotAtMs: snap.snapshotAtMs,

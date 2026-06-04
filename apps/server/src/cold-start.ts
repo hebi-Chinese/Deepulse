@@ -4,12 +4,12 @@
 import type { Container } from './composition.js'
 import type { Logger } from '@claudio/shared'
 
-
 const HOUR_MS = 60 * 60 * 1000
 const SNAPSHOT_TTL_MS = 24 * HOUR_MS
 
 export async function runColdStart(container: Container, logger: Logger): Promise<void> {
   // 1) DB 里的 cookie 优先于 env（用户手动登录会写 DB）
+  // SECURITY: dbCookie 含 NCM 会话 token, **永远不要把它塞进 logger 调用**
   const dbCookie = await container.account.loadCookie()
   if (dbCookie !== null && dbCookie.length > 0) {
     container.ncm.setCookie(dbCookie)
