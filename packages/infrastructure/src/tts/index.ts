@@ -1,80 +1,43 @@
-// TTS · GPT-SoVITS :8000 客户端
-// 流萤声线 + 中文专用 + emotion 5 选 1
-// 服务端默认返回 0.0.0.0 host 的 URL → 替换成 127.0.0.1 (前端浏览器才能放)
+// TTS 工厂 · 根据 TTS_TYPE env 选实现
+//
+// 现有实现:
+//   - gpt-sovits : 主人本地 GPT-SoVITS server (流萤声线, 需要 GPU + 部署)
+//   - mock       : 默认, 返回静音 wav, fork 者首次跑能完整 demo UI 不报错
+//   - voxcpm     : 占位, 用户自行 fork 实现 — 见 ./README.md
+//
+// 加新 TTS provider:
+//   1. 本目录新建子目录 + 实现 ITtsClient (synthesize 一个方法)
+//   2. 这里注册 createTts 分支
+//   3. shared/config 的 TTS_TYPE enum 加新枚举
 
-import { ExternalServiceError } from '@claudio/shared'
-import { request } from 'undici'
-import { z } from 'zod'
+import { GptSovitsTtsClient } from './gpt-sovits/index.js'
+import { MockTtsClient } from './mock/index.js'
 
-import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@claudio/application'
+import type { ITtsClient } from '@claudio/application'
 
-const DEFAULT_MODEL = '星穹铁道-中文-流萤'
-const DEFAULT_VERSION = 'v4'
-const DEFAULT_LANG = '中文'
-// undici 默认 headers/body 各 300s,SoVITS 卡死会拖死 /api/dj/say 5 分钟。
-// 合成 < 10s 是正常水平,留 30s 上限给 cold-start
-const HEADERS_TIMEOUT_MS = 30_000
-const BODY_TIMEOUT_MS = 30_000
+export type TtsType = 'gpt-sovits' | 'mock' | 'voxcpm'
 
-// gpt-sovits /infer_single 响应契约(只取我们关心的字段)
-const inferResponseSchema = z.object({
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- gpt-sovits 返回字段
-  audio_url: z.string().min(1),
-})
+export type TtsFactoryConfig = {
+  readonly ttsUrl: string
+  readonly logger?: { readonly warn: (msg: string) => void }
+}
 
-export class GptSovitsTtsClient implements ITtsClient {
-  constructor(
-    private readonly baseUrl: string,
-    private readonly modelName: string = DEFAULT_MODEL,
-  ) {}
-
-  async synthesize(req: TtsSynthesizeRequest): Promise<TtsSynthesizeResult> {
-    /* eslint-disable @typescript-eslint/naming-convention -- gpt-sovits API 字段 */
-    const payload = {
-      version: DEFAULT_VERSION,
-      model_name: this.modelName,
-      emotion: req.emotion,
-      text: req.text,
-      text_lang: DEFAULT_LANG,
-      prompt_text_lang: DEFAULT_LANG,
-      media_type: 'wav',
-    }
-    /* eslint-enable @typescript-eslint/naming-convention */
-
-    const url = `${this.baseUrl.replace(/\/$/, '')}/infer_single`
-    const res = await request(url, {
-      method: 'POST',
-      // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-      headersTimeout: HEADERS_TIMEOUT_MS,
-      bodyTimeout: BODY_TIMEOUT_MS,
-    })
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      const body = await res.body.text()
-      throw new ExternalServiceError(
-        'gpt-sovits',
-        `HTTP ${String(res.statusCode)}: ${body.slice(0, 200)}`,
-        res.statusCode,
+export function createTts(type: TtsType, config: TtsFactoryConfig): ITtsClient {
+  switch (type) {
+    case 'gpt-sovits':
+      return new GptSovitsTtsClient(config.ttsUrl)
+    case 'mock':
+      return config.logger !== undefined ? new MockTtsClient(config.logger) : new MockTtsClient()
+    case 'voxcpm':
+      throw new Error(
+        'TTS type "voxcpm" not bundled — see infrastructure/src/tts/README.md for steps to add it',
       )
+    default: {
+      const _exhaustive: never = type
+      throw new Error(`unknown TTS type: ${_exhaustive as string}`)
     }
-
-    const json: unknown = await res.body.json()
-    const parsed = inferResponseSchema.safeParse(json)
-    if (!parsed.success) {
-      throw new ExternalServiceError(
-        'gpt-sovits',
-        `response shape invalid: ${parsed.error.message}`,
-      )
-    }
-
-    return { audioUrl: rewriteHost(parsed.data.audio_url) }
   }
 }
 
-// 服务端返回 http://0.0.0.0:8000/outputs/xxx.wav,浏览器无法解析 0.0.0.0
-// 统一替换为 127.0.0.1 (与 baseUrl 同源,前端可直接 fetch)
-function rewriteHost(audioUrl: string): string {
-  return audioUrl.replace('://0.0.0.0', '://127.0.0.1')
-}
+export { GptSovitsTtsClient } from './gpt-sovits/index.js'
+export { MockTtsClient } from './mock/index.js'
