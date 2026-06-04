@@ -1,4 +1,4 @@
-// 领域错误类层级（CODING_STANDARDS §5.3 错误信息原则）
+// 领域错误类层级 — 错误信息必须包含: 操作 + 失败原因 + 相关 ID/上下文
 // 所有自定义错误继承 DomainError，便于 instanceof 收窄
 
 export class DomainError extends Error {

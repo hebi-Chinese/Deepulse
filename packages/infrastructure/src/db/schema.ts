@@ -1,5 +1,5 @@
 // Drizzle schema · SQLite · 单一真相源
-// 类型从 schema 推导（CODING_STANDARDS_NODE_TS §8.1）
+// 类型从 schema 推导 (typeof xxx.$inferSelect), 不手写
 // 改 schema：drizzle-kit generate → migrate
 
 import { sql } from 'drizzle-orm'

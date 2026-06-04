@@ -1,61 +1,71 @@
 # Claudio · 个人 AI 电台
 
-让 Claude（或可换的 LLM）当 DJ 大脑，读你听歌习惯、规划串场、像电台主播那样播报。网易云音乐拿歌，GPT-SoVITS 合成语音。
+浏览器里开一个 PWA, AI DJ 给你聊天 + 选歌, 网易云音乐做音源, 流式 TTS 把 DJ 的话变成声音。Clean Architecture 的 pnpm monorepo。
 
-## 文档入口
+## 前置
 
-- [PRD.md](./PRD.md) —— 需求 / 架构 / 里程碑
-- [CODING_STANDARDS.md](./CODING_STANDARDS.md) —— 通用代码规范（语言无关）
-- [CODING_STANDARDS_NODE_TS.md](./CODING_STANDARDS_NODE_TS.md) —— Node + TypeScript 专项
+- Node.js >= 20 (推荐 22 LTS)
+- pnpm >= 11 (`npm i -g pnpm`)
+- Windows / macOS / Linux
 
-## 前置要求
-
-- Node.js >= 20（推荐 24 LTS，本机已用）
-- pnpm >= 11（`npm i -g pnpm`）
-- Windows / macOS / Linux 任意
-
-## 快速开始
+## 起 dev
 
 ```bash
-# 1. 安装依赖
 pnpm install
-
-# 2. 类型检查（验证骨架）
-pnpm typecheck
-
-# 3. 启动开发服（所有包并行）
-pnpm dev
+pnpm dev          # turbo 并行起 PWA (:3000) + server (:8787)
 ```
+
+Windows 用户也可以直接双击根目录 `启动.bat`。
+
+打开 [http://localhost:3000](http://localhost:3000) 就能用。
+
+## fork 起来要做什么
+
+读 [CLAUDE.md](./CLAUDE.md) — 给 AI 助手 (Claude Code / Cursor / Copilot) 看的 fork 引导, 把 LLM 大脑 / TTS 声音 / 网易云账号三件事告诉它, 它会自动帮你配。
+
+人工配也行, 三个必选项:
+
+1. **LLM 大脑**: 改 `启动.bat` 顶部 `set BRAIN=...` (deepseek / ollama / openai / claude), 详见 [brain/README](./packages/infrastructure/src/brain/README.md)
+2. **TTS 声音**: `set TTS=...` (mock / gpt-sovits / voxcpm), 详见 [tts/README](./packages/infrastructure/src/tts/README.md)
+3. **网易云账号** (可选): PWA 设置面板里扫码登录
 
 ## 仓库结构
 
-详见 PRD §5.3。简版：
-
 ```
 apps/
-  server/                 Fastify 后端入口
-  pwa/                    Next.js 15 前端
+  server/        Fastify 5 + WS 后端 (:8787)
+  pwa/           Next.js 15 + React 19 前端 (:3000)
 packages/
-  shared/                 跨层共享（types / schemas / logger / config / errors）
-  domain/                 业务实体 + 不变量（零依赖）
-  application/            use-cases + ports（接口定义）
-  infrastructure/         适配器实现（brain / ncm / tts / calendar / signal / db）
-  ui/                     前端 tokens + components + themes
+  domain/        业务实体 + Errors (零外部依赖)
+  application/   use-cases + ports (只依赖 domain)
+  infrastructure/  adapters (brain/tts/ncm/db/clock/...)
+  shared/        config (env) + logger + 跨层共享
 tools/
-  configs/                共享 ESLint / Prettier / tsconfig
-  arch-test/              dependency-cruiser 架构测试
+  configs/       共享 ESLint / Prettier / tsconfig
+  arch-test/     dependency-cruiser 守住依赖方向
 ```
 
-## 端口分配
+依赖单向: `apps → infrastructure → application → domain`。架构由 `pnpm arch:check` 强制。
 
-| 端口 | 服务 |
-|---|---|
-| 3000 | Next.js PWA |
-| 8787 | Fastify 后端 |
-| 3001 | NCM API（自动 spawn） |
-| 8000 | GPT-SoVITS 语音（外部，用户手动起） |
-| 9527 / 9528 | aemeath 桌宠 HTTP / MCP（外部） |
+## 常用命令
+
+```bash
+pnpm dev          # 起 PWA + server (turbo)
+pnpm typecheck    # 全仓 tsc --noEmit
+pnpm lint         # ESLint --max-warnings 0
+pnpm arch:check   # dependency-cruiser
+pnpm build        # 生产构建
+```
+
+## 端口
+
+| Port | Service                     |
+| ---- | --------------------------- |
+| 3000 | PWA                         |
+| 8787 | Server                      |
+| 3001 | NCM API (server 自动 spawn) |
+| 8000 | GPT-SoVITS (可选, 需自起)   |
 
 ## 状态
 
-v0.1 · M0 骨架阶段
+WIP 私有项目, 非生产就绪。
