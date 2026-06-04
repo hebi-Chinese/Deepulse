@@ -12,7 +12,14 @@ build/
 # data / runtime
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 data/
+# 但 user-prefs 模板要进 git (主人首次 clone 看得到示例 + 说明)
+# 实际填写的内容也会跟着进, 这是有意的 — Claudio 是单用户项目, prefs 本身可视为代码
+!apps/server/data/
+!apps/server/data/user-prefs/
+!apps/server/data/user-prefs/*.md
 logs/
 cache/
 
@@ -33,6 +40,18 @@ coverage/
 
 # 临时 aemeath JSON 文件（项目根的桌宠推送临时存储）
 _aemeath_*.json
+
+# 临时工作文件 (session 间不持久)
+tmp/
+
+# 本地工具配置 (含本机绝对路径 + MCP server 地址,不入仓)
+.mcp.json
+
+# 调试 / 预览图 (28MB, 非运行时需要)
+apps/pwa/public/preview/
+
+# 第三方 vendored 工具 (Blender MCP server, 用 git submodule 或独立 fork)
+tools/blender-mcp-main/
 
 # misc
 *.log

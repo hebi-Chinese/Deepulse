@@ -6,123 +6,18 @@ settings:
 
 catalogs:
   default:
-    '@fastify/cors':
-      specifier: ^10.0.0
-      version: 10.1.0
-    '@fastify/websocket':
-      specifier: ^11.0.0
-      version: 11.2.0
-    '@types/better-sqlite3':
-      specifier: ^7.6.0
-      version: 7.6.13
-    '@types/node':
-      specifier: ^22.10.0
-      version: 22.19.19
-    '@types/node-cron':
-      specifier: ^3.0.0
-      version: 3.0.11
-    '@types/react':
-      specifier: ^19.0.0
-      version: 19.2.15
-    '@types/react-dom':
-      specifier: ^19.0.0
-      version: 19.2.3
-    '@typescript-eslint/eslint-plugin':
-      specifier: ^8.16.0
-      version: 8.59.4
-    '@typescript-eslint/parser':
-      specifier: ^8.16.0
-      version: 8.59.4
-    NeteaseCloudMusicApi:
-      specifier: ^4.32.0
-      version: 4.32.0
-    autoprefixer:
-      specifier: ^10.4.0
-      version: 10.5.0
-    better-sqlite3:
-      specifier: ^11.5.0
-      version: 11.10.0
-    dependency-cruiser:
-      specifier: ^16.7.0
-      version: 16.10.4
-    drizzle-kit:
-      specifier: ^0.28.0
-      version: 0.28.1
-    drizzle-orm:
-      specifier: ^0.36.4
-      version: 0.36.4
-    eslint:
-      specifier: ^9.16.0
-      version: 9.39.4
-    eslint-plugin-import:
-      specifier: ^2.31.0
-      version: 2.32.0
-    eslint-plugin-promise:
-      specifier: ^7.2.0
-      version: 7.3.0
-    eslint-plugin-unused-imports:
-      specifier: ^4.1.0
-      version: 4.4.1
-    execa:
-      specifier: ^9.5.0
-      version: 9.6.1
-    fastify:
-      specifier: ^5.1.0
-      version: 5.8.5
     husky:
       specifier: ^9.1.0
       version: 9.1.7
     lint-staged:
       specifier: ^15.2.0
       version: 15.5.2
-    next:
-      specifier: ^15.1.0
-      version: 15.5.18
-    node-cron:
-      specifier: ^3.0.3
-      version: 3.0.3
-    pino:
-      specifier: ^9.5.0
-      version: 9.14.0
-    pino-pretty:
-      specifier: ^11.3.0
-      version: 11.3.0
-    postcss:
-      specifier: ^8.4.0
-      version: 8.5.15
     prettier:
       specifier: ^3.4.0
       version: 3.8.3
-    react:
-      specifier: ^19.0.0
-      version: 19.2.6
-    react-dom:
-      specifier: ^19.0.0
-      version: 19.2.6
-    tailwindcss:
-      specifier: ^3.4.0
-      version: 3.4.19
-    tsx:
-      specifier: ^4.19.0
-      version: 4.22.3
     typescript:
       specifier: ^5.6.3
       version: 5.9.3
-    typescript-eslint:
-      specifier: ^8.16.0
-      version: 8.59.4
-    undici:
-      specifier: ^7.1.0
-      version: 7.25.0
-    vitest:
-      specifier: ^2.1.0
-      version: 2.1.9
-    zod:
-      specifier: ^3.23.8
-      version: 3.25.76
-    zod-to-json-schema:
-      specifier: ^3.23.5
-      version: 3.25.2
 
 importers:
 
@@ -137,6 +32,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.8.3
+      turbo:
+        specifier: ^2.9.16
+        version: 2.9.16
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -241,6 +139,9 @@ importers:
       '@types/node-cron':
         specifier: 'catalog:'
         version: 3.0.11
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       eslint:
         specifier: 'catalog:'
         version: 9.39.4(jiti@1.21.7)
@@ -1510,6 +1411,36 @@ packages:
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
 
+  '@turbo/darwin-64@2.9.16':
+    resolution: {integrity: sha512-jLjApWTSNd7JZ5JaLYfelW1ytnGQOvB7ivl+2RD1xQvJTbi8I9gBjzcga7tDZVPyaxpl10YTfJt3BrYXR18KDw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.9.16':
+    resolution: {integrity: sha512-YPgrn+5HIGzrx0O2a631SV4MBQUe4W/DafMFUuBVgaU32PW9/OTT0ehviF0QSxTXuRJlHvW2eUTemddF5/spmw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/linux-64@2.9.16':
+    resolution: {integrity: sha512-vAEf1H6l26lTpl9FJ/peQo1NUB8RC0sbEJJz5mPcUhHA2bPDup2x3CZPgo/bH8S4cUcBLm4FN3UHd5iUO2RAew==}
+    cpu: [x64]
+    os: [linux]
+
+  '@turbo/linux-arm64@2.9.16':
+    resolution: {integrity: sha512-xDBLR2PZg4BrQOchfG6svgpv5FCNJ2TOtT2psLdEJcdKo1BH+pnPs9Xj6pvUjgfkHbuvBOfeE4R6tvxMoQKDHQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@turbo/windows-64@2.9.16':
+    resolution: {integrity: sha512-NBAJnaUiGdgkSzQwUIdOvkCkcpTSu58G/sBGa0mvBtzfvFOOgrQwepKOOQ8cp6sWM6OcKDNFj2p1dsZA1OWjPg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.9.16':
+    resolution: {integrity: sha512-Y7SJppD0Z8wjO3Ec0ZGd9KQ4Yv0BMnA8CIowj5Vp+OEVsosXDG2weK6/t1RRLfJmc2Ozrnd6y4DOgQys+mn3WQ==}
+    cpu: [arm64]
+    os: [win32]
+
   '@types/better-sqlite3@7.6.13':
     resolution: {integrity: sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA==}
 
@@ -1538,6 +1469,9 @@ packages:
 
   '@types/react@19.2.15':
     resolution: {integrity: sha512-eRwcGNHve+E8qtEQSSRl6urh+rFop4v8gm6O8rGv25CodbvFdLjA1vVQ1KkiFE0w0UPOnb8tDiFKL5lp0rtY5Q==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@typescript-eslint/eslint-plugin@8.59.4':
     resolution: {integrity: sha512-PegsU+XfyJJNjd4+u/k6f9yTyp0lEXXiPopUNobZcIAUJFGICFLN+sP0Rb3JehVmiij1Ph0dFGYqODoRo/2+6A==}
@@ -3957,6 +3891,10 @@ packages:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
 
+  turbo@2.9.16:
+    resolution: {integrity: sha512-NqgRQy6j6dPYcdSdv0q1g9QsZg7SWg87RERM8otw/1AtKU2yTFVClOM7cbwKzOonZr/Ek1blTBucw64L9H0Bwg==}
+    hasBin: true
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -4873,6 +4811,24 @@ snapshots:
 
   '@tootallnate/quickjs-emscripten@0.23.0': {}
 
+  '@turbo/darwin-64@2.9.16':
+    optional: true
+
+  '@turbo/darwin-arm64@2.9.16':
+    optional: true
+
+  '@turbo/linux-64@2.9.16':
+    optional: true
+
+  '@turbo/linux-arm64@2.9.16':
+    optional: true
+
+  '@turbo/windows-64@2.9.16':
+    optional: true
+
+  '@turbo/windows-arm64@2.9.16':
+    optional: true
+
   '@types/better-sqlite3@7.6.13':
     dependencies:
       '@types/node': 22.19.19
@@ -4898,6 +4854,10 @@ snapshots:
   '@types/react@19.2.15':
     dependencies:
       csstype: 3.2.3
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.19.19
 
   '@typescript-eslint/eslint-plugin@8.59.4(@typescript-eslint/parser@8.59.4(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)':
     dependencies:
@@ -7648,6 +7608,15 @@ snapshots:
       safe-buffer: 5.2.1
 
   tunnel@0.0.6: {}
+
+  turbo@2.9.16:
+    optionalDependencies:
+      '@turbo/darwin-64': 2.9.16
+      '@turbo/darwin-arm64': 2.9.16
+      '@turbo/linux-64': 2.9.16
+      '@turbo/linux-arm64': 2.9.16
+      '@turbo/windows-64': 2.9.16
+      '@turbo/windows-arm64': 2.9.16
 
   type-check@0.4.0:
     dependencies:
