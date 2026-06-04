@@ -11,7 +11,8 @@
     "./schemas": "./src/schemas/index.ts",
     "./logger": "./src/logger/index.ts",
     "./config": "./src/config/index.ts",
-    "./errors": "./src/errors/index.ts"
+    "./errors": "./src/errors/index.ts",
+    "./dj-ws": "./src/dj-ws/protocol.ts"
   },
   "scripts": {
     "dev": "tsc -b --watch",

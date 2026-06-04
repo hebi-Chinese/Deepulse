@@ -13,7 +13,9 @@
     "./tts": "./src/tts/index.ts",
     "./calendar": "./src/calendar/index.ts",
     "./signal": "./src/signal/index.ts",
-    "./db": "./src/db/index.ts"
+    "./db": "./src/db/index.ts",
+    "./user-prefs": "./src/user-prefs/index.ts",
+    "./clock": "./src/clock/index.ts"
   },
   "scripts": {
     "dev": "tsc -b --watch",

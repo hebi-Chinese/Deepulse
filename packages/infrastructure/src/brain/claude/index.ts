@@ -4,6 +4,11 @@
 //
 // 关键依赖: execa(进程) + zod-to-json-schema(zod→JSON Schema)
 
+import { randomUUID } from 'node:crypto'
+import { unlinkSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { TextDecoder } from 'node:util'
 
 import { ExternalServiceError } from '@claudio/shared'
@@ -48,13 +53,16 @@ export class ClaudeCodeBrain implements IBrain {
     options?: BrainGenerateOptions,
   ): AsyncIterable<string> {
     const { systemPrompt, userPrompt } = splitMessages(messages)
-    const child = this.spawn(userPrompt, {
-      format: 'stream-json',
-      systemPrompt,
-      ...(options?.signal !== undefined ? { signal: options.signal } : {}),
-      ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
-      // temperature: claude CLI 不支持透传,暂忽略 (留在 BrainGenerateOptions 给将来其他 IBrain 实现用)
-    })
+    const child = this.spawn(
+      userPrompt,
+      await this.prepareSpawnOpts({
+        format: 'stream-json',
+        systemPrompt,
+        ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+        ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
+        // temperature: claude CLI 不支持透传,暂忽略 (留在 BrainGenerateOptions 给将来其他 IBrain 实现用)
+      }),
+    )
 
     // 用 try/finally 保证: 无论 caller break 出 for await 还是跑完,
     // child 都会被等到结束并检查 exitCode。否则提前 break 时 await child 永远不执行,
@@ -85,13 +93,16 @@ export class ClaudeCodeBrain implements IBrain {
     const { systemPrompt, userPrompt } = splitMessages(messages)
     const jsonSchema = JSON.stringify(zodToJsonSchema(schema, { target: 'jsonSchema7' }))
 
-    const child = this.spawn(userPrompt, {
-      format: 'json',
-      systemPrompt,
-      jsonSchema,
-      ...(options?.signal !== undefined ? { signal: options.signal } : {}),
-      ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
-    })
+    const child = this.spawn(
+      userPrompt,
+      await this.prepareSpawnOpts({
+        format: 'json',
+        systemPrompt,
+        jsonSchema,
+        ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+        ...(options?.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {}),
+      }),
+    )
     const result = await child
     if (result.exitCode !== 0) {
       throw new ExternalServiceError(
@@ -103,11 +114,17 @@ export class ClaudeCodeBrain implements IBrain {
     return parseGenerateJsonResult(stringifyStream(result.stdout), schema)
   }
 
-  private spawn(prompt: string, opts: SpawnOptions) {
+  // 拆成两步: prepareSpawnOpts (async, 只做 tmp file 写入) + spawn (sync, execa 创子进程)
+  // 这样 spawn() 返回 execa Subprocess 本体 (有 stdout/kill/finally), 而不是被 await 等完的 Result
+  // 之前 writeFileSync 阻塞 event loop 每 DJ turn (silent latency hit) — 现在 writeFile async
+  private async prepareSpawnOpts(opts: SpawnOptions): Promise<PreparedSpawn> {
     const args: string[] = ['-p', '--output-format', opts.format]
-    if (opts.format === 'stream-json') args.push('--verbose')
+    if (opts.format === 'stream-json') args.push('--verbose', '--include-partial-messages')
+
+    let systemPromptFile: string | undefined
     if (opts.systemPrompt !== undefined && opts.systemPrompt.length > 0) {
-      args.push('--system-prompt', assertSafeFlagValue('systemPrompt', opts.systemPrompt))
+      systemPromptFile = await writeTempPromptFile('sys', opts.systemPrompt)
+      args.push('--system-prompt-file', assertSafeFlagValue('systemPromptFile', systemPromptFile))
     }
     if (opts.jsonSchema !== undefined) {
       args.push('--json-schema', assertSafeFlagValue('jsonSchema', opts.jsonSchema))
@@ -115,14 +132,45 @@ export class ClaudeCodeBrain implements IBrain {
     if (opts.maxTokens !== undefined) {
       args.push('--max-tokens', String(opts.maxTokens))
     }
-    args.push(assertSafeFlagValue('prompt', prompt))
+    return {
+      args,
+      ...(systemPromptFile !== undefined ? { systemPromptFile } : {}),
+      ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
+    }
+  }
 
-    return execa(this.bin, args, {
+  private spawn(prompt: string, prep: PreparedSpawn) {
+    const child = execa(this.bin, prep.args, {
       maxBuffer: DEFAULT_MAX_BUFFER,
       reject: false,
-      ...(opts.signal !== undefined ? { cancelSignal: opts.signal } : {}),
+      input: prompt,
+      ...(prep.signal !== undefined ? { cancelSignal: prep.signal } : {}),
     })
+    if (prep.systemPromptFile !== undefined) {
+      const filePath = prep.systemPromptFile
+      const cleanup = (): void => {
+        try {
+          unlinkSync(filePath)
+        } catch {
+          // 已被清理或不存在, 忽略
+        }
+      }
+      void child.finally(cleanup)
+    }
+    return child
   }
+}
+
+type PreparedSpawn = {
+  readonly args: readonly string[]
+  readonly systemPromptFile?: string
+  readonly signal?: AbortSignal
+}
+
+async function writeTempPromptFile(tag: string, content: string): Promise<string> {
+  const path = join(tmpdir(), `claudio-brain-${tag}-${randomUUID()}.txt`)
+  await writeFile(path, content, 'utf-8')
+  return path
 }
 
 function stringifyStream(v: unknown): string {
