@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { AtmosphereCanvas } from '../atmosphere/AtmosphereCanvas'
 import { BrowseSill } from '../browse/BrowseSill'
 import { CommandPalette } from '../command/CommandPalette'
 import { useCommandPalette } from '../command/useCommandPalette'
@@ -55,8 +56,7 @@ export function Player() {
     importLocal: cb.importLocal,
   }
   // SharedAudio 必须在最外层渲染, 跨 mode 切换时不卸载 (否则 audio.src 丢, 歌停 + UI 卡播放中)
-  // browse 走极简纯蓝背景 (用户要求, 推翻 RoomScene + AtmosphereStage)
-  // listen 模式跳过 AtmosphereStage — SceneStage 自带房间图 + 月光 + 风铃
+  // Browse / Listen 是两套 React 树: 都自带房间场景图 + 天气, 切 mode 走整树 swap
   return (
     <>
       <SharedAudio logic={logic} />
@@ -103,11 +103,14 @@ function ListenStageView({ p }: { readonly p: ShellProps }) {
   )
 }
 
-// browse 模式 — 仍走 RoomScene + 旧 PlayerShell (顶栏导入/搜索/设置)
+// browse 模式 — 正面电台场景 (search-bg.png) + 天气粒子 + PlayerShell (顶栏/搜索/设置)
 function BrowseStageView({ p }: { readonly p: ShellProps }) {
-  // 极简纯蓝背景, 推翻 RoomScene + AtmosphereStage 那套房间装饰
+  const showWeather = p.weather === 'rain' || p.weather === 'snow'
   return (
-    <div className="browse-minimal-bg">
+    <div className="browse-scene-bg">
+      {showWeather ? (
+        <AtmosphereCanvas weather={p.weather} className="browse-weather-canvas" />
+      ) : null}
       <PlayerShell {...p} />
     </div>
   )

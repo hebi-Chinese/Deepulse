@@ -952,9 +952,8 @@ nextjs-portal {
   display: none !important;
 }
 
-/* Browse 主页 — 正面电台场景作底图 (跟 Listen 侧面图对应)
-   纯蓝是过渡设计, 已废弃 */
-.browse-minimal-bg {
+/* Browse 主页 — 正面电台场景作底图 (跟 Listen 侧面图 listen-bg.png 对应) */
+.browse-scene-bg {
   position: fixed;
   inset: 0;
   /* 顶部 → 底部轻 wash, 让歌单/队列卡片可读, 同时透出场景气氛 */
@@ -967,6 +966,17 @@ nextjs-portal {
     ),
     url('/scene/search-bg.png') center center / cover no-repeat;
   overflow: hidden;
+}
+
+/* Browse 天气粒子 — search-bg.png 里窗户大致位置 (待 ?adjust=browse 调) */
+.browse-weather-canvas {
+  position: fixed;
+  left: 20%;
+  top: 5%;
+  width: 60%;
+  height: 45%;
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* ════════════════════════════════════════════════════════════════════════
