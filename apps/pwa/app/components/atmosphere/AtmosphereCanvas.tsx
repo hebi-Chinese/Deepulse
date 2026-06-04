@@ -15,9 +15,15 @@ import type { AtmosphereEngine, Pointer, RippleSpawn, Viewport, Weather } from '
 
 type Props = {
   readonly weather: Weather
+  // 可选: 覆盖默认 "全屏 fixed inset:0 -z-10" 定位
+  // 用于 Listen 模式把 canvas 限定到窗户区域 (尺寸=窗户尺寸, 粒子自动适配)
+  readonly className?: string
+  readonly style?: React.CSSProperties
 }
 
-export function AtmosphereCanvas({ weather }: Props) {
+const DEFAULT_CLASS = 'fixed inset-0 w-screen h-screen -z-10 pointer-events-none'
+
+export function AtmosphereCanvas({ weather, className, style }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
@@ -41,7 +47,8 @@ export function AtmosphereCanvas({ weather }: Props) {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="fixed inset-0 w-screen h-screen -z-10 pointer-events-none"
+      className={className ?? DEFAULT_CLASS}
+      {...(style !== undefined ? { style } : {})}
     />
   )
 }
@@ -57,7 +64,6 @@ function createEngine(weather: Weather): AtmosphereEngine {
     case 'clear':
       return createClearEngine()
     case 'fog':
-    case 'thunder':
       // v1 未实现,先用 clear 占位
       return createClearEngine()
     default: {

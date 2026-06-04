@@ -10,14 +10,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { AtmosphereStage } from '../atmosphere/AtmosphereStage'
 import { BrowseSill } from '../browse/BrowseSill'
 import { CommandPalette } from '../command/CommandPalette'
 import { useCommandPalette } from '../command/useCommandPalette'
-import { ListenSill } from '../listen/ListenSill'
-import { VolumeFloat } from '../listen/VolumeFloat'
-import { RoomScene } from '../room/RoomScene'
 import { WindowToggle } from '../room/WindowToggle'
+import { SceneStage } from '../scene/SceneStage'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { useLanguage } from '../settings/useLanguage'
 
@@ -43,26 +40,76 @@ export function Player() {
   useAudioUnlock(logic.audioRef)
   const cb = usePlayCallbacks(logic, view, trackMeta)
 
+  const shellProps: ShellProps = {
+    logic,
+    view,
+    language,
+    cmdk,
+    settingsOpen,
+    setSettingsOpen,
+    weather,
+    setWeather,
+    trackMeta,
+    playAndListen: cb.playAndListen,
+    playKeepView: cb.playKeepView,
+    importLocal: cb.importLocal,
+  }
+  // SharedAudio 必须在最外层渲染, 跨 mode 切换时不卸载 (否则 audio.src 丢, 歌停 + UI 卡播放中)
+  // browse 走极简纯蓝背景 (用户要求, 推翻 RoomScene + AtmosphereStage)
+  // listen 模式跳过 AtmosphereStage — SceneStage 自带房间图 + 月光 + 风铃
   return (
-    <AtmosphereStage weather={weather}>
+    <>
       <SharedAudio logic={logic} />
-      <RoomScene>
-        <PlayerShell
-          logic={logic}
-          view={view}
-          language={language}
-          cmdk={cmdk}
-          settingsOpen={settingsOpen}
-          setSettingsOpen={setSettingsOpen}
-          weather={weather}
-          setWeather={setWeather}
-          trackMeta={trackMeta}
-          playAndListen={cb.playAndListen}
-          playKeepView={cb.playKeepView}
-          importLocal={cb.importLocal}
-        />
-      </RoomScene>
-    </AtmosphereStage>
+      {view.mode === 'listen' ? (
+        <ListenStageView p={shellProps} />
+      ) : (
+        <BrowseStageView p={shellProps} />
+      )}
+    </>
+  )
+}
+
+// listen 模式 — SceneStage + Overlays (设置/cmdk),不挂 RoomScene/TopToolbar/WindowToggle
+function ListenStageView({ p }: { readonly p: ShellProps }) {
+  return (
+    <>
+      <SceneStage
+        audioRef={p.logic.audioRef}
+        song={p.logic.currentSong}
+        previousSong={p.trackMeta.previousSong}
+        playing={p.logic.state.playing}
+        userInitiatedTrack={p.trackMeta.userInitiated}
+        language={p.language}
+        queueLen={p.logic.state.queue.length}
+        weather={p.weather}
+        onTogglePlay={p.logic.actions.togglePlay}
+        onPrev={() => {
+          p.trackMeta.markUserInitiated()
+          p.logic.actions.handlePrev()
+        }}
+        onNext={() => {
+          p.trackMeta.markUserInitiated()
+          p.logic.actions.handleNext()
+        }}
+        onPlay={p.playKeepView}
+        onExitListen={p.view.exitListen}
+        onOpenSettings={() => {
+          p.setSettingsOpen(true)
+        }}
+        onOpenCmdk={p.cmdk.toggle}
+      />
+      <Overlays p={p} />
+    </>
+  )
+}
+
+// browse 模式 — 仍走 RoomScene + 旧 PlayerShell (顶栏导入/搜索/设置)
+function BrowseStageView({ p }: { readonly p: ShellProps }) {
+  // 极简纯蓝背景, 推翻 RoomScene + AtmosphereStage 那套房间装饰
+  return (
+    <div className="browse-minimal-bg">
+      <PlayerShell {...p} />
+    </div>
   )
 }
 
@@ -143,34 +190,23 @@ function PlayerShell(p: ShellProps) {
   )
 }
 
-// 左下统一关/开窗按钮 + Listen 时左下音量浮控
+// 左下关窗按钮 (browse 模式下进 listen 的入口)
+// 注意: listen 模式现在走 SceneStage,自带左下 ⊘ 退出按钮和右下 DJ 按钮,
+//      所以这里不再需要 VolumeFloat / 不再需要 listen 分支
 function BottomFloats({ p }: { readonly p: ShellProps }) {
-  const isEn = p.language.t('settingsWeather') === 'Weather'
   return (
-    <>
-      <WindowToggle
-        mode={p.view.mode}
-        language={p.language}
-        enterDisabled={p.logic.currentSong === undefined}
-        onEnter={() => {
-          if (p.logic.currentSong !== undefined) {
-            p.trackMeta.markUserInitiated()
-            p.view.enterListen()
-          }
-        }}
-        onExit={p.view.exitListen}
-      />
-      {p.view.mode === 'listen' ? (
-        <VolumeFloat
-          volume={p.logic.state.volume}
-          muted={p.logic.state.muted}
-          onChange={p.logic.actions.setVolume}
-          onToggleMute={p.logic.actions.toggleMute}
-          label={isEn ? 'Volume' : '音量'}
-          muteLabel={isEn ? 'Unmute' : '取消静音'}
-        />
-      ) : null}
-    </>
+    <WindowToggle
+      mode={p.view.mode}
+      language={p.language}
+      enterDisabled={p.logic.currentSong === undefined}
+      onEnter={() => {
+        if (p.logic.currentSong !== undefined) {
+          p.trackMeta.markUserInitiated()
+          p.view.enterListen()
+        }
+      }}
+      onExit={p.view.exitListen}
+    />
   )
 }
 
@@ -205,33 +241,11 @@ type SwitcherProps = Pick<
   'logic' | 'view' | 'language' | 'trackMeta' | 'playAndListen' | 'playKeepView'
 >
 
+// PlayerShell 现在只在 browse 模式渲染 (listen 走 SceneStage),
+// 所以这里直接返回 BrowseSill,不再分支 ListenSill
+// 注: Browse 里点歌走 playKeepView (不强切 Listen) — 用户自己点关窗才进 Listen
 function SillSwitcher(p: SwitcherProps) {
-  if (p.view.mode === 'listen') {
-    return (
-      <ListenSill
-        audioRef={p.logic.audioRef}
-        song={p.logic.currentSong}
-        previousSong={p.trackMeta.previousSong}
-        playing={p.logic.state.playing}
-        lrcLines={p.logic.state.lrcLines}
-        lrcLoading={p.logic.state.lrcLoading}
-        activeLrcIndex={p.logic.activeLrcIndex}
-        userInitiatedTrack={p.trackMeta.userInitiated}
-        language={p.language}
-        onTogglePlay={p.logic.actions.togglePlay}
-        onPrev={() => {
-          p.trackMeta.markUserInitiated()
-          p.logic.actions.handlePrev()
-        }}
-        onNext={() => {
-          p.trackMeta.markUserInitiated()
-          p.logic.actions.handleNext()
-        }}
-        onPlay={p.playKeepView}
-      />
-    )
-  }
-  return <BrowseSill logic={p.logic} language={p.language} onPlayAndListen={p.playAndListen} />
+  return <BrowseSill logic={p.logic} language={p.language} onPlay={p.playKeepView} />
 }
 
 // ────────────────────────────────────────────────────────────────────────

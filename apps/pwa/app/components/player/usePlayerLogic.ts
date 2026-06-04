@@ -15,6 +15,7 @@ type AudioRef = React.RefObject<HTMLAudioElement | null>
 export type PlayerActions = {
   readonly playSong: (song: ApiSong) => void
   readonly queueSong: (song: ApiSong) => void
+  readonly insertNext: (song: ApiSong) => void
   readonly removeFromQueue: (id: string) => void
   readonly togglePlay: () => void
   readonly handlePrev: () => void
@@ -144,9 +145,10 @@ type AudioSourceSyncOptions = {
 
 function useAudioSourceSync(opts: AudioSourceSyncOptions): void {
   const { audioRef, audioUrl, muted, volume, setState } = opts
-  // 切歌 (audioUrl 变) 才重设 src + play()。
-  // 音量/静音由 setVolume/toggleMute action 直接改 audio.volume,**不能进 dep**,
-  // 否则 volume 一变就会 audio.src=audioUrl → 当前歌从头播 (用户痛点)。
+  // 切歌 (audioUrl 变) 才重设 src + play().
+  // muted/volume 故意排除 deps: 它们由 setVolume/toggleMute action 直接改 audio.volume,
+  // 如果进 deps 就会"音量一动当前歌从头播"(用户痛点). 这里只在切歌瞬间读一次当前 volume.
+  // (项目 lint 未启用 react-hooks/exhaustive-deps, 注释仅作给后人提醒)
   useEffect(() => {
     const audio = audioRef.current
     if (audio === null || audioUrl === undefined) return
@@ -161,7 +163,7 @@ function useAudioSourceSync(opts: AudioSourceSyncOptions): void {
 // ────────────────────────────────────────────────────────────────────────
 // queue actions
 
-type QueueActions = Pick<PlayerActions, 'playSong' | 'queueSong' | 'removeFromQueue'>
+type QueueActions = Pick<PlayerActions, 'playSong' | 'queueSong' | 'insertNext' | 'removeFromQueue'>
 
 function useQueueActions(setState: SetState): QueueActions {
   const playSong = useCallback(
@@ -176,13 +178,19 @@ function useQueueActions(setState: SetState): QueueActions {
     },
     [setState],
   )
+  const insertNext = useCallback(
+    (song: ApiSong) => {
+      setState((s) => insertAsNext(s, song))
+    },
+    [setState],
+  )
   const removeFromQueue = useCallback(
     (id: string) => {
       setState((s) => removeQueueItem(s, id))
     },
     [setState],
   )
-  return { playSong, queueSong, removeFromQueue }
+  return { playSong, queueSong, insertNext, removeFromQueue }
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -312,6 +320,20 @@ function enqueueAndPlay(s: PlayerState, song: ApiSong): PlayerState {
 function appendUnique(s: PlayerState, song: ApiSong): PlayerState {
   if (s.queue.some((q) => q.id === song.id)) return s
   return { ...s, queue: [...s.queue, song] }
+}
+
+// 把 song 插到当前曲后面 (current + 1). 已在播 / 已在 next 槽位 → 不动. 没当前曲 → 退化为末尾追加.
+function insertAsNext(s: PlayerState, song: ApiSong): PlayerState {
+  if (s.currentIndex < 0) return appendUnique(s, song)
+  const existingIdx = s.queue.findIndex((q) => q.id === song.id)
+  if (existingIdx === s.currentIndex) return s
+  if (existingIdx === s.currentIndex + 1) return s
+  const removed = existingIdx >= 0 ? s.queue.filter((_, i) => i !== existingIdx) : s.queue
+  const adjustedCurrent =
+    existingIdx >= 0 && existingIdx < s.currentIndex ? s.currentIndex - 1 : s.currentIndex
+  const insertAt = adjustedCurrent + 1
+  const newQueue = [...removed.slice(0, insertAt), song, ...removed.slice(insertAt)]
+  return { ...s, queue: newQueue, currentIndex: adjustedCurrent }
 }
 
 function removeQueueItem(s: PlayerState, id: string): PlayerState {

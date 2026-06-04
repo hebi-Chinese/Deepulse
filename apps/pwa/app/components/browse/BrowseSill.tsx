@@ -19,10 +19,11 @@ import type { LanguageHook } from '../settings/useLanguage'
 type Props = {
   readonly logic: PlayerLogic
   readonly language: LanguageHook
-  readonly onPlayAndListen: (song: ApiSong) => void
+  // 点歌名 = 立即播这首 (不切 view, 用户自己点关窗才进 Listen)
+  readonly onPlay: (song: ApiSong) => void
 }
 
-export function BrowseSill({ logic, language, onPlayAndListen }: Props) {
+export function BrowseSill({ logic, language, onPlay }: Props) {
   return (
     <>
       <section
@@ -32,19 +33,32 @@ export function BrowseSill({ logic, language, onPlayAndListen }: Props) {
         <div className="max-w-5xl mx-auto h-full px-6 pointer-events-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 h-full">
             <div className="space-y-5 overflow-y-auto pr-1">
-              <NowPlayingTile logic={logic} language={language} onPlayAndListen={onPlayAndListen} />
-              <PlaylistsSection
+              <BrowseSearchBar
                 language={language}
-                onPlay={onPlayAndListen}
+                onPlay={onPlay}
+                onInsertNext={logic.actions.insertNext}
                 onEnqueue={logic.actions.queueSong}
               />
-              <DailyRecommendations onPlay={onPlayAndListen} onEnqueue={logic.actions.queueSong} language={language} />
+              <NowPlayingTile logic={logic} language={language} />
+              <PlaylistsSection
+                language={language}
+                onPlay={onPlay}
+                onInsertNext={logic.actions.insertNext}
+                onEnqueue={logic.actions.queueSong}
+              />
+              <DailyRecommendations
+                onPlay={onPlay}
+                onInsertNext={logic.actions.insertNext}
+                onEnqueue={logic.actions.queueSong}
+                language={language}
+              />
             </div>
             <div className="overflow-y-auto">
               <Card>
                 <QueuePanel
                   queue={logic.state.queue}
                   currentIndex={logic.state.currentIndex}
+                  onJump={onPlay}
                   onRemove={logic.actions.removeFromQueue}
                 />
               </Card>
@@ -73,7 +87,6 @@ function NowPlayingTile({
 }: {
   readonly logic: PlayerLogic
   readonly language: LanguageHook
-  readonly onPlayAndListen: (song: ApiSong) => void
 }) {
   const song = logic.currentSong
   const { t } = language
@@ -94,7 +107,9 @@ function NowPlayingTile({
           <div className="w-20 h-20 rounded-xl bg-white/8" />
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] tracking-widest text-white/45 uppercase">{t('nowPlaying')}</div>
+          <div className="text-[11px] tracking-widest text-white/45 uppercase">
+            {t('nowPlaying')}
+          </div>
           <div className="mt-1 text-white text-lg font-light truncate">{song.title}</div>
           <div className="text-white/55 text-sm truncate">
             {song.artists.map((a) => a.name).join(' · ')}
@@ -105,12 +120,106 @@ function NowPlayingTile({
   )
 }
 
+function BrowseSearchBar({
+  language,
+  onPlay,
+  onInsertNext,
+  onEnqueue,
+}: {
+  readonly language: LanguageHook
+  readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
+  readonly onEnqueue: (s: ApiSong) => void
+}) {
+  const { t } = language
+  const [query, setQuery] = useState('')
+  const { results, searching, error } = useBrowseSearch(query)
+  return (
+    <Card>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+        }}
+        placeholder={t('searchPlaceholder')}
+        className="w-full bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:bg-white/15 transition"
+        aria-label={t('search')}
+        autoComplete="off"
+      />
+      {searching && results.length === 0 ? (
+        <div className="text-white/40 text-xs mt-3 animate-pulse">…</div>
+      ) : null}
+      {error !== null ? <div className="text-red-300/70 text-xs mt-3">{error}</div> : null}
+      {results.length > 0 ? (
+        <ul className="mt-3 space-y-0.5 max-h-72 overflow-y-auto">
+          {results.map((song) => (
+            <RecRow
+              key={song.id}
+              song={song}
+              onPlay={onPlay}
+              onInsertNext={onInsertNext}
+              onEnqueue={onEnqueue}
+              t={t}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </Card>
+  )
+}
+
+function useBrowseSearch(query: string): {
+  readonly results: readonly ApiSong[]
+  readonly searching: boolean
+  readonly error: string | null
+} {
+  const [results, setResults] = useState<readonly ApiSong[]>([])
+  const [searching, setSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length === 0) {
+      setResults([])
+      setSearching(false)
+      setError(null)
+      return
+    }
+    setSearching(true)
+    setError(null)
+    let cancelled = false
+    const handle = window.setTimeout(() => {
+      api
+        .search(q, 12)
+        .then((res) => {
+          if (!cancelled) setResults(res.songs)
+        })
+        .catch((err: unknown) => {
+          if (!cancelled) {
+            setResults([])
+            setError(err instanceof Error ? err.message : '搜索失败, 请重试')
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false)
+        })
+    }, 250)
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
+    }
+  }, [query])
+  return { results, searching, error }
+}
+
 function DailyRecommendations({
   onPlay,
+  onInsertNext,
   onEnqueue,
   language,
 }: {
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
   readonly language: LanguageHook
 }) {
@@ -128,7 +237,14 @@ function DailyRecommendations({
       ) : (
         <ul className="space-y-0.5">
           {songs.slice(0, 8).map((song) => (
-            <RecRow key={song.id} song={song} onPlay={onPlay} onEnqueue={onEnqueue} t={t} />
+            <RecRow
+              key={song.id}
+              song={song}
+              onPlay={onPlay}
+              onInsertNext={onInsertNext}
+              onEnqueue={onEnqueue}
+              t={t}
+            />
           ))}
         </ul>
       )}
@@ -167,48 +283,120 @@ function useDailyFetch(): {
 function RecRow({
   song,
   onPlay,
+  onInsertNext,
   onEnqueue,
   t,
 }: {
   readonly song: ApiSong
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
   readonly t: LanguageHook['t']
 }) {
   return (
     <li className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/8 group transition-colors">
+      <SongCoverBtn
+        song={song}
+        label={t('insertNext')}
+        onClick={() => {
+          onInsertNext(song)
+        }}
+      />
+      <SongTitleBtn
+        song={song}
+        label={t('play')}
+        onClick={() => {
+          onPlay(song)
+        }}
+      />
+      <RowHoverActions>
+        <SmallPill
+          onClick={() => {
+            onEnqueue(song)
+          }}
+        >
+          {t('enqueue')}
+        </SmallPill>
+      </RowHoverActions>
+    </li>
+  )
+}
+
+function SongCoverBtn({
+  song,
+  label,
+  onClick,
+}: {
+  readonly song: ApiSong
+  readonly label: string
+  readonly onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="shrink-0 cursor-pointer rounded-md transition-transform hover:scale-105"
+      title={label}
+      aria-label={label}
+    >
       {song.coverUrl !== undefined ? (
         <img src={song.coverUrl} alt="" className="w-10 h-10 rounded-md object-cover" />
       ) : (
         <div className="w-10 h-10 rounded-md bg-white/8" />
       )}
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-white/90 truncate">{song.title}</div>
-        <div className="text-xs text-white/50 truncate">
-          {song.artists.map((a) => a.name).join(' · ')}
-        </div>
+    </button>
+  )
+}
+
+function SongTitleBtn({
+  song,
+  label,
+  onClick,
+}: {
+  readonly song: ApiSong
+  readonly label: string
+  readonly onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-1 min-w-0 text-left cursor-pointer rounded px-1 -mx-1 hover:bg-white/4"
+      title={label}
+    >
+      <div className="text-sm text-white/90 truncate group-hover:text-white">{song.title}</div>
+      <div className="text-xs text-white/50 truncate">
+        {song.artists.map((a) => a.name).join(' · ')}
       </div>
-      <div className="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
-        <button
-          type="button"
-          onClick={() => {
-            onPlay(song)
-          }}
-          className="text-xs px-2.5 py-1 rounded-md bg-white/20 hover:bg-white/30 text-white"
-        >
-          {t('play')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onEnqueue(song)
-          }}
-          className="text-xs px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/15 text-white/80"
-        >
-          {t('enqueue')}
-        </button>
-      </div>
-    </li>
+    </button>
+  )
+}
+
+function RowHoverActions({ children }: { readonly children: React.ReactNode }) {
+  return (
+    <div className="opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
+      {children}
+    </div>
+  )
+}
+
+function SmallPill({
+  children,
+  onClick,
+  variant,
+}: {
+  readonly children: React.ReactNode
+  readonly onClick: () => void
+  readonly variant?: 'default' | 'accent'
+}) {
+  const cls =
+    variant === 'accent'
+      ? 'text-xs px-2.5 py-1 rounded-md bg-white/12 hover:bg-white/20 text-white/85'
+      : 'text-xs px-2.5 py-1 rounded-md bg-white/8 hover:bg-white/15 text-white/80'
+  return (
+    <button type="button" onClick={onClick} className={cls}>
+      {children}
+    </button>
   )
 }
 

@@ -19,6 +19,7 @@ type Dict = {
   readonly searchEmpty: string
   readonly play: string
   readonly enqueue: string
+  readonly insertNext: string
   readonly queue: string
   readonly queueEmpty: string
   readonly nowPlaying: string
@@ -84,6 +85,7 @@ const ZH: Dict = {
   searchEmpty: '还没搜过什么',
   play: '播放',
   enqueue: '入列',
+  insertNext: '插下一首',
   queue: '播放队列',
   queueEmpty: '队列为空',
   nowPlaying: '正在播放',
@@ -149,6 +151,7 @@ const EN: Dict = {
   searchEmpty: 'No searches yet',
   play: 'Play',
   enqueue: 'Queue',
+  insertNext: 'Play next',
   queue: 'Up next',
   queueEmpty: 'Queue is empty',
   nowPlaying: 'Now playing',

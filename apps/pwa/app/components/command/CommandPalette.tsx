@@ -27,10 +27,20 @@ export function CommandPalette({ open, onClose, language, onPlay, onEnqueue }: P
   const [results, setResults] = useState<readonly ApiSong[]>([])
   const [active, setActive] = useState(0)
   const [searching, setSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useFocusOnOpen(open, inputRef)
-  useDebouncedSearch(query, setResults, setSearching)
-  useKeyNav({ open, onClose, results, active, setActive, onPlay, onEnqueue, onAfterAction: onClose })
+  useDebouncedSearch(query, setResults, setSearching, setError)
+  useKeyNav({
+    open,
+    onClose,
+    results,
+    active,
+    setActive,
+    onPlay,
+    onEnqueue,
+    onAfterAction: onClose,
+  })
 
   if (!open) return null
   return (
@@ -44,6 +54,7 @@ export function CommandPalette({ open, onClose, language, onPlay, onEnqueue }: P
         active={active}
         results={results}
         searching={searching}
+        error={error}
         onPlay={onPlay}
         onClose={onClose}
       />
@@ -60,6 +71,7 @@ type BodyProps = {
   readonly active: number
   readonly results: readonly ApiSong[]
   readonly searching: boolean
+  readonly error: string | null
   readonly onPlay: (s: ApiSong) => void
   readonly onClose: () => void
 }
@@ -88,9 +100,15 @@ function CmdkBody(p: BodyProps) {
       />
       <CmdkList {...p} />
       <div className="cmdk-hint">
-        <span><span className="cmdk-kbd">Enter</span> {t('cmdkHintPlay')}</span>
-        <span><span className="cmdk-kbd">Tab</span> {t('cmdkHintEnqueue')}</span>
-        <span><span className="cmdk-kbd">Esc</span> {t('cmdkHintExit')}</span>
+        <span>
+          <span className="cmdk-kbd">Enter</span> {t('cmdkHintPlay')}
+        </span>
+        <span>
+          <span className="cmdk-kbd">Tab</span> {t('cmdkHintEnqueue')}
+        </span>
+        <span>
+          <span className="cmdk-kbd">Esc</span> {t('cmdkHintExit')}
+        </span>
       </div>
     </div>
   )
@@ -98,6 +116,13 @@ function CmdkBody(p: BodyProps) {
 
 function CmdkList(p: BodyProps) {
   const { t } = p.language
+  if (p.error !== null && p.results.length === 0) {
+    return (
+      <div className="cmdk-list">
+        <EmptyHint>{`✗ ${p.error}`}</EmptyHint>
+      </div>
+    )
+  }
   if (p.results.length === 0) {
     const msg = p.searching || p.query.trim().length > 0 ? t('cmdkPlaceholder') : t('searchEmpty')
     return (
@@ -181,15 +206,18 @@ function useDebouncedSearch(
   query: string,
   setResults: (r: readonly ApiSong[]) => void,
   setSearching: (v: boolean) => void,
+  setError: (msg: string | null) => void,
 ): void {
   useEffect(() => {
     const q = query.trim()
     if (q.length === 0) {
       setResults([])
       setSearching(false)
+      setError(null)
       return
     }
     setSearching(true)
+    setError(null)
     let cancelled = false
     const handle = window.setTimeout(() => {
       api
@@ -197,8 +225,14 @@ function useDebouncedSearch(
         .then((res) => {
           if (!cancelled) setResults(res.songs)
         })
-        .catch(() => {
-          if (!cancelled) setResults([])
+        .catch((err: unknown) => {
+          // DANGEROUS-2 fix: search 失败必须区分 "0 结果" vs "网络挂了". 之前静默清空结果
+          // 让用户以为搜不到 — 没有 actionable 信号去发现后端挂了
+          console.error('[CommandPalette] search failed for', q, err)
+          if (!cancelled) {
+            setResults([])
+            setError(err instanceof Error ? err.message : '搜索失败, 请重试')
+          }
         })
         .finally(() => {
           if (!cancelled) setSearching(false)
@@ -208,7 +242,7 @@ function useDebouncedSearch(
       cancelled = true
       window.clearTimeout(handle)
     }
-  }, [query, setResults, setSearching])
+  }, [query, setResults, setSearching, setError])
 }
 
 type KeyNavOpts = {

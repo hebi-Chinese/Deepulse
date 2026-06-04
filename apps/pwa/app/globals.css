@@ -488,6 +488,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 80;
+  /* cmdk 是浮窗 — 底层(Browse/Listen 场景)模糊压暗保证 panel 可读 */
   background: oklch(8% 0.01 30 / 0.55);
   backdrop-filter: blur(8px);
   display: flex;
@@ -803,6 +804,102 @@ body {
   color: oklch(98% 0 0);
 }
 
+/* ─── DJ Chat WS 版细节 (M3) ─── */
+.dj-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid oklch(95% 0 0 / 0.08);
+  gap: 10px;
+}
+.dj-chat-title {
+  font-family: 'Source Han Serif SC', 'Songti SC', serif;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  color: oklch(95% 0 0 / 0.85);
+  flex: 1;
+}
+.dj-chat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dj-chat-dot-on {
+  background: oklch(72% 0.18 145);
+  box-shadow: 0 0 6px oklch(72% 0.18 145 / 0.7);
+}
+.dj-chat-dot-off {
+  background: oklch(55% 0 0);
+}
+.dj-chat-close {
+  background: transparent;
+  border: 0;
+  color: oklch(95% 0 0 / 0.5);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.dj-chat-close:hover {
+  color: oklch(98% 0 0);
+}
+.dj-chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dj-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid oklch(95% 0 0 / 0.08);
+}
+.dj-chat-input {
+  flex: 1;
+  background: oklch(8% 0 0 / 0.5);
+  border: 1px solid oklch(95% 0 0 / 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: oklch(98% 0 0);
+  outline: none;
+}
+.dj-chat-input:focus {
+  border-color: oklch(95% 0 0 / 0.3);
+}
+.dj-chat-input:disabled {
+  opacity: 0.5;
+}
+.dj-chat-send {
+  background: oklch(95% 0 0 / 0.15);
+  border: 1px solid oklch(95% 0 0 / 0.18);
+  color: oklch(98% 0 0);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dj-chat-send:hover:not(:disabled) {
+  background: oklch(95% 0 0 / 0.25);
+}
+.dj-chat-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dj-msg-typing {
+  opacity: 0.5;
+  animation: dj-typing-pulse 1.4s ease-in-out infinite;
+}
+@keyframes dj-typing-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+
 /* ────────────────────────────────────────────────────────────────────────
    动画 keyframes
    ─────────────────────────────────────────────────────────────────────── */
@@ -853,4 +950,669 @@ body {
 /* Hide Next.js dev overlay (it ships English copy that doesn't fit the room) */
 nextjs-portal {
   display: none !important;
+}
+
+/* Browse 主页 — 正面电台场景作底图 (跟 Listen 侧面图对应)
+   纯蓝是过渡设计, 已废弃 */
+.browse-minimal-bg {
+  position: fixed;
+  inset: 0;
+  /* 顶部 → 底部轻 wash, 让歌单/队列卡片可读, 同时透出场景气氛 */
+  background:
+    linear-gradient(
+      to bottom,
+      oklch(6% 0.01 30 / 0.45) 0%,
+      oklch(6% 0.01 30 / 0.55) 50%,
+      oklch(6% 0.01 30 / 0.65) 100%
+    ),
+    url('/scene/search-bg.png') center center / cover no-repeat;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Scene · Listen 模式沉浸场景 (v3)
+   左后 3/4 视角的深夜电台 DJ 房,真实图底 + CSS/SVG 后处理
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* mic/字幕共享底线: 视口怎么变, 麦底沿 与 字幕底沿 都恒等于 --scene-anchor */
+[data-mode='listen'] {
+  --mic-w: min(30vw, 520px);
+  --mic-visible-h: calc(var(--mic-w) * 0.957);
+  --scene-anchor: 52vh;
+}
+
+/* 底层 AI 房间图 (侧面视角 — Listen 沉浸场景) */
+.scene-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: url('/scene/listen-bg.png') center center / cover no-repeat;
+  filter: saturate(0.92) contrast(1.05);
+}
+
+/* 窗户内部覆盖 (去掉原图城市,换月光/星点/风铃/雨) */
+/* 窗户区域 (风铃/雾 overlay 都装在这里) — 跟 listen-bg.png 真窗户矩形对齐
+   不再用椭圆 mask, 改用 .scene-foreground 反向 mask 让窗户洞透出粒子 */
+.scene-window {
+  position: fixed;
+  left: 3%;
+  top: 0;
+  width: 52%;
+  height: 65%;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Canvas 粒子层 — 跟 .scene-window 同矩形位置, 不裁形状 (粒子在矩形内充满)
+   屋内位置由 .scene-foreground 在更高 z-index 用反向 mask 遮挡 */
+.scene-weather-canvas {
+  position: fixed;
+  left: 3%;
+  top: 0;
+  width: 52%;
+  height: 65%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* 前景遮罩层 — 复用 listen-bg.png 同图, 但反向 mask 把窗户区域抠透明
+   窗户位置 → 透出 canvas 粒子 (z=3) + 底层 .scene-bg (z=1, 同张图的窗外天空)
+   屋内位置 → 显示这张前景图 (墙/混音台/麦克风/桌子/植物 全在), 挡住任何溢出粒子 */
+.scene-foreground {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: url('/scene/listen-bg.png') center center / cover no-repeat;
+  filter: saturate(0.92) contrast(1.05);
+  pointer-events: none;
+  /* 反向 mask: ellipse 在窗户矩形位置, transparent 中央 → 不显示前景 → 透出 canvas
+     边缘 0.78-1.0 软过渡, 让窗框处自然融合 */
+  -webkit-mask-image: radial-gradient(ellipse 27% 34% at 29% 32%, transparent 78%, #000 100%);
+  mask-image: radial-gradient(ellipse 27% 34% at 29% 32%, transparent 78%, #000 100%);
+}
+
+/* 风铃 (3 个) — Japanese 风铃 + 短签 tanzaku */
+.scene-chime {
+  position: absolute;
+  transform-origin: 50% 0%;
+}
+.scene-chime svg {
+  display: block;
+}
+.scene-chime.c1 {
+  left: 14%;
+  top: 5%;
+  animation: scene-chime-c1 5.5s ease-in-out infinite;
+}
+.scene-chime.c2 {
+  left: 40%;
+  top: 2%;
+  animation: scene-chime-c2 7.2s ease-in-out -1.4s infinite;
+}
+.scene-chime.c3 {
+  left: 68%;
+  top: 8%;
+  animation: scene-chime-c3 6.1s ease-in-out -2.8s infinite;
+}
+@keyframes scene-chime-c1 {
+  0%, 100% { transform: rotate(-2.5deg) scale(1.7); }
+  50%      { transform: rotate(2.5deg)  scale(1.7); }
+}
+@keyframes scene-chime-c2 {
+  0%, 100% { transform: rotate(-2.5deg) scale(2.0); }
+  50%      { transform: rotate(2.5deg)  scale(2.0); }
+}
+@keyframes scene-chime-c3 {
+  0%, 100% { transform: rotate(-2.5deg) scale(1.5); }
+  50%      { transform: rotate(2.5deg)  scale(1.5); }
+}
+
+/* 雨珠从玻璃顶部往下汇流 */
+/* 雨滴 — 落下快 + 撞玻璃压扁拉宽散开 (拍打窗户感) */
+.scene-rain-drop {
+  position: absolute;
+  width: 5px;
+  background: linear-gradient(180deg, rgba(190, 220, 245, 0.85), rgba(180, 210, 235, 0.2));
+  border-radius: 50%;
+  pointer-events: none;
+  animation: scene-drop-slide 2.8s linear infinite;
+}
+@keyframes scene-drop-slide {
+  0%   { opacity: 0; transform: translateY(0) scaleY(1) scaleX(1); }
+  6%   { opacity: 0.95; transform: translateY(24px) scaleY(2.4) scaleX(1); }
+  76%  { opacity: 0.95; transform: translateY(260px) scaleY(8) scaleX(1); }
+  84%  { opacity: 1;    transform: translateY(274px) scaleY(0.3) scaleX(3.6); }
+  100% { opacity: 0;    transform: translateY(278px) scaleY(0.18) scaleX(5); }
+}
+
+/* 雪花 — 窗户内, 飘到下边停顿一下淡出 (撞窗感) */
+.scene-snow-flake {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.95), rgba(220, 230, 245, 0.4) 70%);
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  animation: scene-snow-fall 12s linear infinite;
+}
+@keyframes scene-snow-fall {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(1); }
+  10%  { opacity: 0.95; }
+  85%  { opacity: 0.95; transform: translate(28px, 260px) rotate(290deg) scale(1); }
+  95%  { opacity: 0.7; transform: translate(28px, 268px) rotate(330deg) scale(1.4, 0.6); }
+  100% { opacity: 0; transform: translate(28px, 268px) rotate(360deg) scale(1.6, 0.4); }
+}
+
+/* 雾 — 限在窗户内 (相对 .scene-window) 半透雾汽, 不全屏盖 */
+.scene-window-fog {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 30% 50%, rgba(220, 230, 245, 0.35) 0%, transparent 65%),
+    radial-gradient(ellipse at 70% 60%, rgba(210, 220, 235, 0.30) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(210, 220, 235, 0.18), rgba(180, 195, 215, 0.32));
+  animation: scene-window-fog-drift 22s ease-in-out infinite alternate;
+}
+@keyframes scene-window-fog-drift {
+  0%   { transform: translateX(-3%); }
+  100% { transform: translateX(3%); }
+}
+
+
+/* 玻璃凝水珠 (静态) */
+.scene-glass-bead {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(220, 235, 250, 0.55),
+    rgba(150, 180, 210, 0.25) 60%,
+    rgba(80, 110, 140, 0.15)
+  );
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 -1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* 月光带 — 横扫地板/桌面 */
+.scene-moon-beam {
+  position: fixed;
+  left: 6%;
+  top: 30%;
+  width: 70%;
+  height: 70%;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    rgba(170, 210, 245, 0.28) 0%,
+    rgba(170, 210, 245, 0.14) 22%,
+    rgba(170, 210, 245, 0.06) 38%,
+    transparent 60%
+  );
+  mix-blend-mode: screen;
+  filter: blur(18px);
+  transform: skewX(22deg);
+}
+.scene-moon-beam::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  bottom: 8%;
+  width: 45%;
+  height: 30%;
+  background: radial-gradient(ellipse at 30% 50%, rgba(180, 215, 245, 0.25) 0%, transparent 60%);
+  filter: blur(24px);
+}
+
+/* 月光中漂浮的尘埃 */
+.scene-dust {
+  position: fixed;
+  left: 8%;
+  top: 18%;
+  width: 50%;
+  height: 65%;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.scene-mote {
+  position: absolute;
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  background: rgba(225, 235, 250, 0.95);
+  box-shadow: 0 0 5px rgba(200, 220, 245, 0.9), 0 0 12px rgba(180, 210, 240, 0.5);
+  animation: scene-mote-drift 9s linear infinite;
+}
+.scene-mote.big {
+  width: 3.5px;
+  height: 3.5px;
+  box-shadow: 0 0 7px rgba(210, 225, 250, 1), 0 0 18px rgba(180, 210, 240, 0.55);
+}
+@keyframes scene-mote-drift {
+  0%   { transform: translate(0, 80px) scale(0.4); opacity: 0; }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.7; }
+  100% { transform: translate(-40px, -120px) scale(1.1); opacity: 0; }
+}
+
+/* 真实麦克风 + 完整悬臂 (扣自 db55442a, 已镜像让支架从右进) */
+.scene-mic {
+  position: fixed;
+  right: 1%;
+  top: calc(var(--scene-anchor) - var(--mic-visible-h));
+  width: var(--mic-w);
+  height: auto;
+  z-index: 7;
+  pointer-events: none;
+  filter:
+    drop-shadow(0 18px 26px rgba(0, 0, 0, 0.78))
+    saturate(0.62)
+    brightness(0.78)
+    hue-rotate(-10deg);
+}
+
+/* DJ 字幕 — bottom 锚到共享底线, 跟 mic 自动对齐 */
+.scene-dj-text {
+  position: fixed;
+  right: 30%;
+  bottom: calc(100vh - var(--scene-anchor));
+  max-width: 34%;
+  z-index: 8;
+  pointer-events: none;
+  font-family: 'Source Han Serif SC', 'Songti SC', 'Noto Serif SC', serif;
+  text-align: right;
+}
+.scene-dj-label {
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: rgba(245, 240, 225, 0.45);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  font-family: -apple-system, sans-serif;
+}
+.scene-dj-line {
+  font-size: 22px;
+  line-height: 1.85;
+  color: rgba(248, 244, 232, 0.92);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  animation: scene-dj-line-in 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes scene-dj-line-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* 唱片 — 贴 AI 图唱片机平台 (人眼+网格三次校准, cv2 二次量出来还偏)
+   真平台 中心 ~ (1036, 579), 直径 ~ 160 px
+   位置 = (1036/1672, 579/941) = (61.96%, 61.53%)
+   尺寸 = 160 / 1672 = 9.57% of 视口宽 (倾斜后变成 160x78 椭圆贴合平台) */
+/* vinyl = 2D Decal: 椭圆容器 (overflow hidden) + 内部圆形封面 spin
+   椭圆 width/height/位置 由 --vinyl-* CSS 变量驱动, 调试模式实时改变量即可
+   不再用 rotateX/perspective — 那套对不齐真实透视, 直接 2D 拉伸椭圆贴图最准 */
+:root {
+  /* 用户在 ?adjust=vinyl 模式下亲手拖出的精确值, 完美贴合 listen-bg 真转盘 */
+  --vinyl-left: 65.6%;
+  --vinyl-top: 54.6%;
+  --vinyl-w: 13.80vw;
+  --vinyl-h: 3.10vw;
+}
+.scene-vinyl-wrap {
+  position: fixed;
+  left: var(--vinyl-left);
+  top: var(--vinyl-top);
+  width: var(--vinyl-w);
+  height: var(--vinyl-h);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none;
+  background: #0a0a0a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+/* 封面 = 压扁的椭圆形铺满容器, 静态 (旋转方案物理矛盾, 接受)
+   动态感全部交给上层 .scene-vinyl-grooves 扫光层做 */
+.scene-vinyl {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-position: center;
+  background-color: #0a0a0a;
+  filter: brightness(0.82) saturate(0.78) contrast(0.95);
+}
+/* 扫光层叠加 — 跟封面图同向同速旋转, 加强"在转"的视觉提示 */
+.scene-vinyl-grooves {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,        rgba(255, 255, 255, 0.18) 6deg,  transparent 12deg,
+    transparent 30deg,       rgba(255, 255, 255, 0.10) 36deg, transparent 42deg,
+    transparent 60deg,       rgba(255, 255, 255, 0.16) 66deg, transparent 72deg,
+    transparent 90deg,       rgba(255, 255, 255, 0.10) 96deg, transparent 102deg,
+    transparent 120deg,      rgba(255, 255, 255, 0.18) 126deg, transparent 132deg,
+    transparent 150deg,      rgba(255, 255, 255, 0.10) 156deg, transparent 162deg,
+    transparent 180deg,      rgba(255, 255, 255, 0.16) 186deg, transparent 192deg,
+    transparent 210deg,      rgba(255, 255, 255, 0.10) 216deg, transparent 222deg,
+    transparent 240deg,      rgba(255, 255, 255, 0.18) 246deg, transparent 252deg,
+    transparent 270deg,      rgba(255, 255, 255, 0.10) 276deg, transparent 282deg,
+    transparent 300deg,      rgba(255, 255, 255, 0.16) 306deg, transparent 312deg,
+    transparent 330deg,      rgba(255, 255, 255, 0.10) 336deg, transparent 342deg,
+    transparent 360deg
+  );
+  mix-blend-mode: screen;
+  opacity: 0.28;             /* 中央 label 是主角, 扫光降到背景级 */
+}
+.scene-vinyl-wrap[data-playing='true'] .scene-vinyl-grooves {
+  animation: scene-vinyl-spin-grooves 6s linear infinite;
+}
+@keyframes scene-vinyl-spin-grooves {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* 中心轴 — 真转盘自己有银色支柱了, 隐藏避免重影 */
+.scene-vinyl-spindle {
+  display: none;
+}
+
+/* 调试模式: ?adjust=vinyl → 显示红框轮廓 + handle, 键盘调整 */
+.scene-vinyl-wrap[data-adjust='true'] {
+  outline: 2px dashed #ff3060;
+  outline-offset: -1px;
+}
+.scene-vinyl-adjust-hud {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffd060;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid rgba(255, 208, 96, 0.4);
+}
+.scene-vinyl-adjust-hud kbd {
+  display: inline-block;
+  padding: 0 4px;
+  margin: 0 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* 音频可视化 — 放在 transport chip 右上角的木桌留白处, 示波器风格 (上下镜像对称) */
+.scene-viz {
+  position: fixed;
+  right: 14%;
+  bottom: 13%;
+  width: clamp(220px, 20vw, 320px);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0.82;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.65));
+}
+.scene-viz-bar {
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to top,
+    rgba(245, 230, 200, 0.45),
+    rgba(252, 244, 220, 0.95)
+  );
+  box-shadow: 0 0 4px rgba(245, 220, 170, 0.35);
+  will-change: height;
+}
+
+/* 强化 chiaroscuro: 深暗角 */
+.scene-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    transparent 30%,
+    rgba(0, 0, 0, 0.55) 85%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* 胶片颗粒 (SVG 噪声叠加) */
+.scene-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+}
+
+/* 微弱色差 (镜头瑕疵感) */
+.scene-chroma {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(255, 80, 80, 0.04), transparent 35%),
+    radial-gradient(circle at 88% 50%, rgba(80, 180, 255, 0.04), transparent 35%);
+  mix-blend-mode: screen;
+}
+
+/* ─── UI Chrome ─── */
+
+.scene-topbar {
+  position: fixed;
+  top: 22px;
+  left: 26px;
+  right: 26px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.scene-chip-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.scene-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(15, 12, 8, 0.55);
+  border: 1px solid rgba(240, 230, 210, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: rgba(245, 240, 225, 0.88);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  pointer-events: auto;
+}
+.scene-chip .dim {
+  color: rgba(245, 240, 225, 0.55);
+}
+.scene-chip-clock {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+}
+.scene-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 12, 8, 0.55);
+  border: 1px solid rgba(240, 230, 210, 0.1);
+  color: rgba(245, 240, 225, 0.85);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* 底部 transport chip — 取代旧的 now-playing chip */
+.scene-bottombar {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: none;
+}
+.scene-transport {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px 14px;
+  border-radius: 22px;
+  background: rgba(15, 12, 8, 0.62);
+  border: 1px solid rgba(240, 230, 210, 0.12);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+.scene-transport-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: 'Source Han Serif SC', 'Songti SC', 'Noto Serif SC', serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  opacity: 0.85;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scene-transport-title {
+  color: rgba(248, 244, 232, 0.92);
+}
+.scene-transport-sep {
+  color: rgba(245, 240, 225, 0.35);
+}
+.scene-transport-artist {
+  color: rgba(245, 240, 225, 0.55);
+}
+.scene-transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.scene-transport-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: rgba(245, 240, 225, 0.78);
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.scene-transport-btn:hover {
+  background: rgba(245, 240, 225, 0.1);
+  color: rgba(252, 248, 235, 1);
+}
+.scene-transport-btn.primary {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+  background: rgba(245, 240, 225, 0.14);
+  border: 1px solid rgba(245, 240, 225, 0.2);
+}
+.scene-transport-btn.primary:hover {
+  background: rgba(245, 240, 225, 0.22);
+  transform: translateY(-1px);
+}
+
+/* 左下: 退出 listen (开窗) */
+.scene-corner-left {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 50;
+}
+.scene-corner-left .scene-icon-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 14px;
+}
+
+/* 右下: DJ 触发按钮 (取代电话图标) */
+.scene-corner-right {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+}
+.scene-dj-trigger {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(20, 16, 12, 0.62);
+  border: 1px solid rgba(245, 200, 140, 0.32);
+  color: rgba(248, 226, 188, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  pointer-events: auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: -apple-system, sans-serif;
+  transition: background 160ms ease, transform 160ms ease, border-color 160ms ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.scene-dj-trigger:hover {
+  background: rgba(40, 28, 20, 0.78);
+  transform: translateY(-2px);
+  border-color: rgba(245, 200, 140, 0.55);
+}
+.scene-dj-trigger-label {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+  line-height: 1;
+}
+.scene-dj-trigger-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(120, 200, 130, 0.92);
+  box-shadow: 0 0 5px rgba(120, 200, 130, 0.8);
+  animation: scene-dj-dot-pulse 2.4s ease-in-out infinite;
+}
+@keyframes scene-dj-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
 }

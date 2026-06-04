@@ -13,10 +13,11 @@ import type { LanguageHook } from '../settings/useLanguage'
 type Props = {
   readonly language: LanguageHook
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
 }
 
-export function PlaylistsSection({ language, onPlay, onEnqueue }: Props) {
+export function PlaylistsSection({ language, onPlay, onInsertNext, onEnqueue }: Props) {
   const { t } = language
   const { playlists, loading, requiresLogin, error } = useMyPlaylists()
   return (
@@ -31,6 +32,7 @@ export function PlaylistsSection({ language, onPlay, onEnqueue }: Props) {
         error={error}
         language={language}
         onPlay={onPlay}
+        onInsertNext={onInsertNext}
         onEnqueue={onEnqueue}
       />
     </Card>
@@ -44,17 +46,27 @@ function Body(p: {
   readonly error: string | undefined
   readonly language: LanguageHook
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
 }) {
   const { t } = p.language
   if (p.loading) return <div className="text-white/40 text-sm animate-pulse">…</div>
-  if (p.requiresLogin) return <div className="text-white/40 text-sm">{t('playlistsLoginPrompt')}</div>
+  if (p.requiresLogin)
+    return <div className="text-white/40 text-sm">{t('playlistsLoginPrompt')}</div>
   if (p.error !== undefined) return <div className="text-red-300/70 text-xs">{p.error}</div>
-  if (p.playlists.length === 0) return <div className="text-white/40 text-sm">{t('playlistsEmpty')}</div>
+  if (p.playlists.length === 0)
+    return <div className="text-white/40 text-sm">{t('playlistsEmpty')}</div>
   return (
     <ul className="space-y-1">
       {p.playlists.map((pl) => (
-        <PlaylistRow key={pl.id} playlist={pl} language={p.language} onPlay={p.onPlay} onEnqueue={p.onEnqueue} />
+        <PlaylistRow
+          key={pl.id}
+          playlist={pl}
+          language={p.language}
+          onPlay={p.onPlay}
+          onInsertNext={p.onInsertNext}
+          onEnqueue={p.onEnqueue}
+        />
       ))}
     </ul>
   )
@@ -64,11 +76,13 @@ function PlaylistRow({
   playlist,
   language,
   onPlay,
+  onInsertNext,
   onEnqueue,
 }: {
   readonly playlist: ApiPlaylistMeta
   readonly language: LanguageHook
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
 }) {
   const { t } = language
@@ -90,12 +104,21 @@ function PlaylistRow({
         <div className="flex-1 min-w-0">
           <div className="text-sm text-white/90 truncate">{playlist.name}</div>
           <div className="text-xs text-white/45 truncate">
-            {String(playlist.songCount)} {t('playlistSongCount')} · {playlist.isCreated ? '自建' : '收藏'}
+            {String(playlist.songCount)} {t('playlistSongCount')} ·{' '}
+            {playlist.isCreated ? '自建' : '收藏'}
           </div>
         </div>
         <span className="text-white/45 text-xs">{open ? '▾' : '▸'}</span>
       </button>
-      {open ? <TracksList playlistId={playlist.id} language={language} onPlay={onPlay} onEnqueue={onEnqueue} /> : null}
+      {open ? (
+        <TracksList
+          playlistId={playlist.id}
+          language={language}
+          onPlay={onPlay}
+          onInsertNext={onInsertNext}
+          onEnqueue={onEnqueue}
+        />
+      ) : null}
     </li>
   )
 }
@@ -104,11 +127,13 @@ function TracksList({
   playlistId,
   language,
   onPlay,
+  onInsertNext,
   onEnqueue,
 }: {
   readonly playlistId: string
   readonly language: LanguageHook
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
 }) {
   const { t } = language
@@ -130,7 +155,14 @@ function TracksList({
         </button>
       </div>
       {tracks.map((song) => (
-        <TrackRow key={song.id} song={song} onPlay={onPlay} onEnqueue={onEnqueue} t={t} />
+        <TrackRow
+          key={song.id}
+          song={song}
+          onPlay={onPlay}
+          onInsertNext={onInsertNext}
+          onEnqueue={onEnqueue}
+          t={t}
+        />
       ))}
     </div>
   )
@@ -139,31 +171,36 @@ function TracksList({
 function TrackRow({
   song,
   onPlay,
+  onInsertNext,
   onEnqueue,
   t,
 }: {
   readonly song: ApiSong
   readonly onPlay: (s: ApiSong) => void
+  readonly onInsertNext: (s: ApiSong) => void
   readonly onEnqueue: (s: ApiSong) => void
   readonly t: LanguageHook['t']
 }) {
+  // 歌单条目无封面: "封面=插下一首"退化为行尾小按钮
   return (
     <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/6 group">
-      <div className="flex-1 min-w-0">
-        <div className="text-xs text-white/85 truncate">{song.title}</div>
-        <div className="text-[11px] text-white/45 truncate">
-          {song.artists.map((a) => a.name).join(' · ')}
-        </div>
-      </div>
+      <TrackTitleBtn
+        song={song}
+        label={t('play')}
+        onClick={() => {
+          onPlay(song)
+        }}
+      />
       <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
         <button
           type="button"
           onClick={() => {
-            onPlay(song)
+            onInsertNext(song)
           }}
-          className="text-[10px] px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-white"
+          className="text-[10px] px-2 py-0.5 rounded bg-white/12 hover:bg-white/20 text-white/85"
+          title={t('insertNext')}
         >
-          {t('play')}
+          {t('insertNext')}
         </button>
         <button
           type="button"
@@ -176,6 +213,30 @@ function TrackRow({
         </button>
       </div>
     </div>
+  )
+}
+
+function TrackTitleBtn({
+  song,
+  label,
+  onClick,
+}: {
+  readonly song: ApiSong
+  readonly label: string
+  readonly onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-1 min-w-0 text-left cursor-pointer rounded px-1 -mx-1 hover:bg-white/4"
+      title={label}
+    >
+      <div className="text-xs text-white/85 truncate group-hover:text-white">{song.title}</div>
+      <div className="text-[11px] text-white/45 truncate">
+        {song.artists.map((a) => a.name).join(' · ')}
+      </div>
+    </button>
   )
 }
 

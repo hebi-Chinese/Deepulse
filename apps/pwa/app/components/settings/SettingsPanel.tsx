@@ -122,7 +122,13 @@ function useEsc(active: boolean, onClose: () => void): void {
   }, [active, onClose])
 }
 
-function Group({ label, children }: { readonly label: string; readonly children: React.ReactNode }) {
+function Group({
+  label,
+  children,
+}: {
+  readonly label: string
+  readonly children: React.ReactNode
+}) {
   return (
     <section className="settings-group">
       <div className="settings-label">{label}</div>
@@ -158,8 +164,8 @@ function Pill({
 
 function weatherLabel(w: Weather, lang: Language): string {
   const map: Record<Language, Record<Weather, string>> = {
-    zh: { clear: '晴', rain: '雨', snow: '雪', fog: '雾', thunder: '雷' },
-    en: { clear: 'Clear', rain: 'Rain', snow: 'Snow', fog: 'Fog', thunder: 'Thunder' },
+    zh: { clear: '晴', rain: '雨', snow: '雪', fog: '雾' },
+    en: { clear: 'Clear', rain: 'Rain', snow: 'Snow', fog: 'Fog' },
   }
   return map[lang][w]
 }

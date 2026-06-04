@@ -1,25 +1,21 @@
 'use client'
 
-// DjChat · D 方案: 跟 DJ 对话点歌
-// Listen 模式右下角入口 → 点开抽屉式聊天
-// v1 用规则解析: 抽出"歌手/歌名"片段 → 调 search → 取第一首 → 播放
-//   - "放周杰伦的稻香" → search("稻香 周杰伦")
-//   - "下一首" → 直接 next
-//   - "换一首" → next
-//   - "听点XX" → search("XX")
-// M3 接 LLM 真对话 + 心理画像
+// DjChat · M3 WS 流式版
+// 之前 v1 走 HTTP request/response + 正则 dispatcher; 现在改成:
+//   - 单 WS 连接 (useDjWs),mount 时连,unmount 时断
+//   - typewriter 效果 (token 事件直接 append 到当前 dj 消息文本)
+//   - audio 事件 → 队列播放 (SequentialAudioQueue, 见 dj-ws-client)
+//   - action 事件 → kind=play 时 api.search 拿首歌喂 onPlay,kind=next 调 onNext
+//
+// 上下文构造: 传当前歌 / 队列长度给后端 (DJ 才能引用 "现在这首")
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { api, type ApiSong } from '../../lib/api'
+import { useDjWs, type DjAction, type DjStreamingMessage } from '../../lib/dj-ws-client'
 
 import type { LanguageHook } from '../settings/useLanguage'
-
-type Message = {
-  readonly id: string
-  readonly role: 'user' | 'dj'
-  readonly text: string
-}
+import type { DjContext } from '@claudio/shared/dj-ws'
 
 type Props = {
   readonly open: boolean
@@ -28,74 +24,112 @@ type Props = {
   readonly language: LanguageHook
   readonly onPlay: (song: ApiSong) => void
   readonly onNext: () => void
+  // SceneStage 自己提供右下角触发器, 这里就别再渲染默认 💬 按钮了
+  readonly hideTrigger?: boolean
+  // 当前播放上下文 (传给 DJ 让她能 contextual 回话)
+  readonly currentSong?: ApiSong
+  readonly queueLen?: number
 }
 
-export function DjChat({ open, onClose, onOpen, language, onPlay, onNext }: Props) {
+export function DjChat(props: Props) {
   return (
     <>
-      <button
-        type="button"
-        className="dj-chat-trigger"
-        onClick={open ? onClose : onOpen}
-        aria-label={language.t('djTitle')}
-        title={language.t('djTitle')}
-      >
-        {open ? '×' : '💬'}
-      </button>
-      {open ? <ChatPanel onClose={onClose} language={language} onPlay={onPlay} onNext={onNext} /> : null}
+      {props.hideTrigger === true ? null : (
+        <button
+          type="button"
+          className="dj-chat-trigger"
+          onClick={props.open ? props.onClose : props.onOpen}
+          aria-label={props.language.t('djTitle')}
+          title={props.language.t('djTitle')}
+        >
+          {props.open ? '×' : '💬'}
+        </button>
+      )}
+      {props.open ? <ChatPanel {...props} /> : null}
     </>
   )
 }
 
-type ChatPanelProps = {
-  readonly onClose: () => void
-  readonly language: LanguageHook
-  readonly onPlay: (s: ApiSong) => void
-  readonly onNext: () => void
+function ChatPanel(props: Props) {
+  const handleAction = useChatAction({ onPlay: props.onPlay, onNext: props.onNext })
+  const dj = useDjWs({ enabled: props.open, onAction: handleAction })
+  const ctx = buildContext(props)
+  return (
+    <PanelLayout
+      language={props.language}
+      onClose={props.onClose}
+      messages={dj.state.messages}
+      connected={dj.state.connected}
+      streaming={dj.state.streaming}
+      onSend={(text) => dj.sendUserMsg(text, ctx)}
+      onCancel={dj.cancel}
+    />
+  )
 }
 
-function ChatPanel({ onClose, language, onPlay, onNext }: ChatPanelProps) {
-  const { t } = language
-  const [messages, setMessages] = useState<readonly Message[]>(() => [
-    { id: 'welcome', role: 'dj', text: t('djWelcome') },
-  ])
-  const [input, setInput] = useState('')
-  const [busy, setBusy] = useState(false)
-  const inputRef = useRef<HTMLInputElement | null>(null)
-  const listRef = useRef<HTMLDivElement | null>(null)
+function buildContext(props: Props): DjContext | undefined {
+  if (props.currentSong === undefined && props.queueLen === undefined) return undefined
+  // 一次性 literal 拼好, 不 mutate (避免 Object.assign 累积式 build 中途分支抛出留下半成品)
+  return {
+    ...(props.currentSong !== undefined && {
+      currentSong: {
+        id: props.currentSong.id,
+        title: props.currentSong.title,
+        artists: props.currentSong.artists.map((a) => a.name).join(' / '),
+        ncmId: props.currentSong.ncmId,
+      },
+    }),
+    ...(props.queueLen !== undefined && { queueLen: props.queueLen }),
+  }
+}
 
+// ─── 面板布局 ────────────────────────────────────────────────────────────
+
+type PanelLayoutProps = {
+  readonly language: LanguageHook
+  readonly onClose: () => void
+  readonly messages: readonly DjStreamingMessage[]
+  readonly connected: boolean
+  readonly streaming: boolean
+  readonly onSend: (text: string) => boolean
+  readonly onCancel: () => void
+}
+
+function PanelLayout(p: PanelLayoutProps) {
+  const { t } = p.language
+  const [input, setInput] = useState('')
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
-
-  const send = async (): Promise<void> => {
+  }, [p.messages])
+  const submit = (): void => {
     const text = input.trim()
-    if (text.length === 0 || busy) return
-    setBusy(true)
-    setInput('')
-    setMessages((m) => [...m, { id: rid(), role: 'user', text }])
-    const result = await dispatch(text, { onPlay, onNext })
-    setMessages((m) => [...m, { id: rid(), role: 'dj', text: result.reply }])
-    setBusy(false)
+    if (text.length === 0 || p.streaming) return
+    if (p.onSend(text)) setInput('')
   }
-
   return (
     <div className="dj-chat-panel" role="dialog" aria-label={t('djTitle')}>
-      <ChatHeader title={t('djTitle')} closeLabel={t('settingsClose')} onClose={onClose} />
-      <ChatList listRef={listRef} messages={messages} busy={busy} />
+      <ChatHeader
+        title={t('djTitle')}
+        closeLabel={t('settingsClose')}
+        onClose={p.onClose}
+        connected={p.connected}
+      />
+      <ChatList listRef={listRef} messages={p.messages} />
       <ChatForm
         inputRef={inputRef}
         placeholder={t('djInputPlaceholder')}
-        sendLabel={t('djSend')}
+        sendLabel={p.streaming ? '取消' : t('djSend')}
         input={input}
-        busy={busy}
+        streaming={p.streaming}
+        connected={p.connected}
         onChange={setInput}
-        onSubmit={() => {
-          void send()
-        }}
+        onSubmit={submit}
+        onCancel={p.onCancel}
       />
     </div>
   )
@@ -105,22 +139,21 @@ function ChatHeader({
   title,
   closeLabel,
   onClose,
+  connected,
 }: {
   readonly title: string
   readonly closeLabel: string
   readonly onClose: () => void
+  readonly connected: boolean
 }) {
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-      <h3 className="text-sm font-light tracking-widest text-white/85" style={{ fontFamily: 'serif' }}>
-        {title}
-      </h3>
-      <button
-        type="button"
-        onClick={onClose}
-        className="text-white/50 hover:text-white text-base"
-        aria-label={closeLabel}
-      >
+    <header className="dj-chat-header">
+      <h3 className="dj-chat-title">{title}</h3>
+      <span
+        className={connected ? 'dj-chat-dot dj-chat-dot-on' : 'dj-chat-dot dj-chat-dot-off'}
+        aria-hidden
+      />
+      <button type="button" onClick={onClose} className="dj-chat-close" aria-label={closeLabel}>
         ×
       </button>
     </header>
@@ -130,20 +163,18 @@ function ChatHeader({
 function ChatList({
   listRef,
   messages,
-  busy,
 }: {
   readonly listRef: React.RefObject<HTMLDivElement | null>
-  readonly messages: readonly Message[]
-  readonly busy: boolean
+  readonly messages: readonly DjStreamingMessage[]
 }) {
   return (
-    <div ref={listRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+    <div ref={listRef} className="dj-chat-list">
       {messages.map((m) => (
         <div key={m.id} className={`dj-msg ${m.role === 'dj' ? 'dj-msg-dj' : 'dj-msg-user'}`}>
           {m.text}
+          {m.streaming && m.text.length === 0 ? <span className="dj-msg-typing">…</span> : null}
         </div>
       ))}
-      {busy ? <div className="dj-msg dj-msg-dj opacity-60">…</div> : null}
     </div>
   )
 }
@@ -153,40 +184,45 @@ function ChatForm({
   placeholder,
   sendLabel,
   input,
-  busy,
+  streaming,
+  connected,
   onChange,
   onSubmit,
+  onCancel,
 }: {
   readonly inputRef: React.RefObject<HTMLInputElement | null>
   readonly placeholder: string
   readonly sendLabel: string
   readonly input: string
-  readonly busy: boolean
+  readonly streaming: boolean
+  readonly connected: boolean
   readonly onChange: (v: string) => void
   readonly onSubmit: () => void
+  readonly onCancel: () => void
 }) {
   return (
     <form
-      className="flex gap-2 p-3 border-t border-white/8"
+      className="dj-chat-form"
       onSubmit={(e) => {
         e.preventDefault()
-        onSubmit()
+        if (streaming) onCancel()
+        else onSubmit()
       }}
     >
       <input
         ref={inputRef}
-        className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-sm text-white outline-none border border-white/10 focus:border-white/30"
-        placeholder={placeholder}
+        className="dj-chat-input"
+        placeholder={connected ? placeholder : '连接中…'}
         value={input}
         onChange={(e) => {
           onChange(e.target.value)
         }}
-        disabled={busy}
+        disabled={!connected}
       />
       <button
         type="submit"
-        disabled={busy || input.trim().length === 0}
-        className="px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm disabled:opacity-40"
+        disabled={!connected || (!streaming && input.trim().length === 0)}
+        className="dj-chat-send"
       >
         {sendLabel}
       </button>
@@ -194,46 +230,45 @@ function ChatForm({
   )
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// 意图分发 — 规则版 (v1)
+// ─── action 派发: kind=play 时 search + onPlay ──────────────────────────
 
-type Dispatcher = {
+type ActionHandlerArgs = {
   readonly onPlay: (s: ApiSong) => void
   readonly onNext: () => void
 }
 
-async function dispatch(text: string, d: Dispatcher): Promise<{ reply: string }> {
-  // 1) 跳过类: 下一首 / 换一首 / 跳过
-  if (/(下一首|换一首|跳过|next|skip)/i.test(text)) {
-    d.onNext()
-    return { reply: '好,换一首。' }
+function useChatAction(args: ActionHandlerArgs): (action: DjAction) => void {
+  // 用 ref 持有 callback,避免每次 render 都新建 onAction
+  const ref = useRef(args)
+  useEffect(() => {
+    ref.current = args
+  }, [args.onPlay, args.onNext, args])
+
+  return useCallback((action: DjAction) => {
+    void dispatchAction(action, ref.current)
+  }, [])
+}
+
+async function dispatchAction(action: DjAction, handlers: ActionHandlerArgs): Promise<void> {
+  if (action.kind === 'next') {
+    handlers.onNext()
+    return
   }
-  // 2) 提取查询关键词
-  const query = extractQuery(text)
-  if (query.length === 0) {
-    return { reply: '没听清,告诉我歌名或歌手就行。' }
-  }
+  if (action.query === undefined || action.query.length === 0) return
   try {
-    const res = await api.search(query, 1)
+    const res = await api.search(action.query, 1)
     const song = res.songs[0]
     if (song === undefined) {
-      return { reply: `没找到「${query}」,换个说法?` }
+      // 查到 0 首歌 — 用户视角 DJ 说了播但没动. 也要留痕便于排查
+      console.warn('[DjChat] dispatchAction: search returned 0 songs for', action.query)
+      return
     }
-    d.onPlay(song)
-    return { reply: `放了:${song.title} · ${song.artists.map((a) => a.name).join(' / ')}` }
-  } catch {
-    return { reply: '搜索失败,等等再试。' }
+    if (action.kind === 'play') handlers.onPlay(song)
+    // 'queue' 也走 onPlay 暂时 — 真 enqueue 需要把 actions.queueSong 传进来,M3.1 再做
+    if (action.kind === 'queue') handlers.onPlay(song)
+  } catch (err: unknown) {
+    // DANGEROUS-1 fix: search 失败必须留痕 — 否则 DJ 说了 "好的这就放" 但实际没放, 用户没任何反馈
+    // 后续 M3.1 应把 error 通过 onError handler 反馈给 UI (toast 或 chat bubble)
+    console.error('[DjChat] dispatchAction: search failed for', action.query, err)
   }
-}
-
-function extractQuery(text: string): string {
-  // 去掉指令性前缀 → 留歌名/歌手关键词
-  return text
-    .replace(/(放点|来点|放一首|来一首|听点|听首|想听|放|来|播放|换|帮我|please|play|listen to)/gi, ' ')
-    .replace(/(的歌|的作品|吧|啊|呗|呀|好吗|可以吗)/g, ' ')
-    .trim()
-}
-
-function rid(): string {
-  return `${String(Date.now())}-${String(Math.random()).slice(2, 8)}`
 }

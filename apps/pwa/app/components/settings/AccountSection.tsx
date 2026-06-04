@@ -23,19 +23,36 @@ export function AccountSection({ language }: Props) {
   )
 }
 
-function Body({ login, language }: { readonly login: ReturnType<typeof useNcmLogin>; readonly language: LanguageHook }) {
+function Body({
+  login,
+  language,
+}: {
+  readonly login: ReturnType<typeof useNcmLogin>
+  readonly language: LanguageHook
+}) {
   const { t } = language
   const s = login.state
   if (s.kind === 'fetching') return <HintText>{t('accountFetchingQr')}</HintText>
   if (s.kind === 'pending' || s.kind === 'scanned') {
-    return <QrPanel qrImg={s.qrImg} hint={s.kind === 'scanned' ? t('accountScanned') : t('accountScanWithNcmApp')} />
+    return (
+      <QrPanel
+        qrImg={s.qrImg}
+        hint={s.kind === 'scanned' ? t('accountScanned') : t('accountScanWithNcmApp')}
+      />
+    )
   }
   if (s.kind === 'success') return <SuccessHint>{t('accountSuccess')}</SuccessHint>
   if (s.kind === 'expired') {
     return (
       <div className="flex flex-col gap-2">
         <HintText>{t('accountQrExpired')}</HintText>
-        <PrimaryButton onClick={() => { void login.startLogin() }}>{t('accountRefreshQr')}</PrimaryButton>
+        <PrimaryButton
+          onClick={() => {
+            void login.startLogin()
+          }}
+        >
+          {t('accountRefreshQr')}
+        </PrimaryButton>
       </div>
     )
   }
@@ -43,7 +60,13 @@ function Body({ login, language }: { readonly login: ReturnType<typeof useNcmLog
     return (
       <div className="flex flex-col gap-2">
         <ErrorHint>{s.message}</ErrorHint>
-        <PrimaryButton onClick={() => { void login.startLogin() }}>{t('accountRefreshQr')}</PrimaryButton>
+        <PrimaryButton
+          onClick={() => {
+            void login.startLogin()
+          }}
+        >
+          {t('accountRefreshQr')}
+        </PrimaryButton>
       </div>
     )
   }
@@ -52,15 +75,50 @@ function Body({ login, language }: { readonly login: ReturnType<typeof useNcmLog
     return (
       <div className="flex flex-col gap-2">
         <HintText>{`✓ ${t('accountLoggedIn')}`}</HintText>
-        <SecondaryButton onClick={() => { void login.logout() }}>{t('accountLogout')}</SecondaryButton>
+        <SecondaryButton
+          onClick={() => {
+            void login.logout()
+          }}
+        >
+          {t('accountLogout')}
+        </SecondaryButton>
       </div>
     )
   }
   return (
     <div className="flex flex-col gap-2">
       <HintText>{t('accountLoggedOut')}</HintText>
-      <PrimaryButton onClick={() => { void login.startLogin() }}>{t('accountLoginWithNcm')}</PrimaryButton>
+      <RememberToggle checked={login.remember} onChange={login.setRemember} />
+      <PrimaryButton
+        onClick={() => {
+          void login.startLogin()
+        }}
+      >
+        {t('accountLoginWithNcm')}
+      </PrimaryButton>
     </div>
+  )
+}
+
+function RememberToggle({
+  checked,
+  onChange,
+}: {
+  readonly checked: boolean
+  readonly onChange: (v: boolean) => void
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-white/65 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => {
+          onChange(e.target.checked)
+        }}
+        className="w-3.5 h-3.5 accent-white/60"
+      />
+      <span>记住我 (cookie 入 DB, 重启不掉线; 不勾仅本次会话有效)</span>
+    </label>
   )
 }
 
@@ -92,7 +150,13 @@ function ErrorHint({ children }: { readonly children: React.ReactNode }) {
   return <div className="text-xs text-red-300/85">{children}</div>
 }
 
-function PrimaryButton({ onClick, children }: { readonly onClick: () => void; readonly children: React.ReactNode }) {
+function PrimaryButton({
+  onClick,
+  children,
+}: {
+  readonly onClick: () => void
+  readonly children: React.ReactNode
+}) {
   return (
     <button
       type="button"
@@ -104,7 +168,13 @@ function PrimaryButton({ onClick, children }: { readonly onClick: () => void; re
   )
 }
 
-function SecondaryButton({ onClick, children }: { readonly onClick: () => void; readonly children: React.ReactNode }) {
+function SecondaryButton({
+  onClick,
+  children,
+}: {
+  readonly onClick: () => void
+  readonly children: React.ReactNode
+}) {
   return (
     <button
       type="button"

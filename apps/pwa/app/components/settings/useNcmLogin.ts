@@ -30,6 +30,8 @@ export type LoginState =
 
 export type NcmLoginHook = {
   readonly state: LoginState
+  readonly remember: boolean
+  readonly setRemember: (v: boolean) => void
   readonly startLogin: () => Promise<void>
   readonly logout: () => Promise<void>
   readonly reset: () => void
@@ -38,20 +40,26 @@ export type NcmLoginHook = {
 type SetState = React.Dispatch<React.SetStateAction<LoginState>>
 type Cancelled = { current: boolean }
 type Timer = { current: number | null }
+type RememberRef = { current: boolean }
 
 type PollCtx = {
   readonly setState: SetState
   readonly cancelled: Cancelled
   readonly pollRef: Timer
+  // 用 ref 而不是闭包变量, 这样 startLogin 时 remember 的最新值能传给轮询里的 qrCheck
+  readonly rememberRef: RememberRef
 }
 
 export function useNcmLogin(): NcmLoginHook {
   const [state, setState] = useState<LoginState>({ kind: 'idle', loggedIn: false })
+  const [remember, setRemember] = useState(false)
   const pollRef: Timer = useRef<number | null>(null)
   const cancelledRef: Cancelled = useRef(false)
+  const rememberRef: RememberRef = useRef(false)
+  rememberRef.current = remember
   // ctx 走 ref,不在每次 render 都是新对象 — 否则 useEffect dep 永远变,
   // cleanup 反复触发把 cancelled flip 来 flip 去,把 inflight 的 startLogin 杀掉
-  const ctxRef = useRef<PollCtx>({ setState, cancelled: cancelledRef, pollRef })
+  const ctxRef = useRef<PollCtx>({ setState, cancelled: cancelledRef, pollRef, rememberRef })
 
   useInitialStatusCheck(ctxRef)
 
@@ -66,7 +74,7 @@ export function useNcmLogin(): NcmLoginHook {
     setState((s) => (s.kind === 'idle' ? s : { kind: 'idle', loggedIn: false }))
   }, [])
 
-  return { state, startLogin, logout, reset }
+  return { state, remember, setRemember, startLogin, logout, reset }
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────
@@ -122,7 +130,7 @@ async function runLogout(ctx: PollCtx): Promise<void> {
 function schedulePoll(unikey: string, qrImg: string, ctx: PollCtx): void {
   const tick = (): void => {
     api
-      .loginQrCheck(unikey)
+      .loginQrCheck(unikey, ctx.rememberRef.current)
       .then((r) => {
         if (ctx.cancelled.current) return
         if (r.state === 'success') {
