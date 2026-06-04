@@ -215,8 +215,9 @@ function handleAdjustKey(e: KeyboardEvent, vars: VinylVars): boolean {
   const moveStep = e.shiftKey ? 1.0 : 0.2
   const sizeStep = e.shiftKey ? 0.5 : 0.1
   if (handleMoveKey(e.key, vars, moveStep)) return true
-  if (handleSizeKey(e.key, vars, sizeStep)) return true
-  if (e.key === 'p' || e.key === 'P') {
+  // 缩放键走 e.code 物理位置, 不受中文 IME 全角/半角影响
+  if (handleSizeKey(e.code, vars, sizeStep)) return true
+  if (e.code === 'KeyP') {
     printVinylVars(vars)
     return true
   }
@@ -243,19 +244,19 @@ function handleMoveKey(key: string, vars: { left: number; top: number }, step: n
   }
 }
 
-function handleSizeKey(key: string, vars: VinylVars, step: number): boolean {
-  const z = zoomDelta(key)
+function handleSizeKey(code: string, vars: VinylVars, step: number): boolean {
+  const z = zoomDelta(code)
   if (z !== 0) {
     vars.w += step * z
     vars.h += step * z * (DEFAULT_VARS.h / DEFAULT_VARS.w)
     return true
   }
-  const wd = widthDelta(key)
+  const wd = widthDelta(code)
   if (wd !== 0) {
     vars.w += step * wd
     return true
   }
-  const hd = heightDelta(key)
+  const hd = heightDelta(code)
   if (hd !== 0) {
     vars.h += step * hd
     return true
@@ -263,19 +264,20 @@ function handleSizeKey(key: string, vars: VinylVars, step: number): boolean {
   return false
 }
 
-function zoomDelta(key: string): -1 | 0 | 1 {
-  if (key === '=' || key === '+') return 1
-  if (key === '-' || key === '_') return -1
+// 用 e.code 物理位置 (Equal/Minus/...) 替代 e.key, 不受 IME 全角/半角影响
+function zoomDelta(code: string): -1 | 0 | 1 {
+  if (code === 'Equal' || code === 'NumpadAdd') return 1
+  if (code === 'Minus' || code === 'NumpadSubtract') return -1
   return 0
 }
-function widthDelta(key: string): -1 | 0 | 1 {
-  if (key === ']') return 1
-  if (key === '[') return -1
+function widthDelta(code: string): -1 | 0 | 1 {
+  if (code === 'BracketRight') return 1
+  if (code === 'BracketLeft') return -1
   return 0
 }
-function heightDelta(key: string): -1 | 0 | 1 {
-  if (key === '.' || key === '>') return 1
-  if (key === ',' || key === '<') return -1
+function heightDelta(code: string): -1 | 0 | 1 {
+  if (code === 'Period') return 1
+  if (code === 'Comma') return -1
   return 0
 }
 
@@ -345,31 +347,32 @@ function applyLwVars(v: LWVars): void {
 }
 
 function handleLwKey(e: KeyboardEvent, v: LWVars): boolean {
-  // 跟 useBrowseAdjuster 同理 — weather canvas 占视口比例大, step 默认 1%
+  // 跟 useBrowseAdjuster 同理 — canvas 占视口比例大, step 默认 1%
   const moveStep = e.shiftKey ? 3 : 1
   const sizeStep = e.shiftKey ? 3 : 1
   if (handleMoveKey(e.key, v, moveStep)) return true
-  if (handleLwSizeKey(e.key, v, sizeStep)) return true
-  if (e.key === 'p' || e.key === 'P') {
+  // e.code 物理位置不受 IME 全角/半角影响 (复用 vinyl 那套 zoom/width/heightDelta)
+  if (handleLwSizeKey(e.code, v, sizeStep)) return true
+  if (e.code === 'KeyP') {
     printLwVars(v)
     return true
   }
   return false
 }
 
-function handleLwSizeKey(key: string, v: LWVars, step: number): boolean {
-  const z = zoomDelta(key)
+function handleLwSizeKey(code: string, v: LWVars, step: number): boolean {
+  const z = zoomDelta(code)
   if (z !== 0) {
     v.w += step * z
     v.h += step * z
     return true
   }
-  const wd = widthDelta(key)
+  const wd = widthDelta(code)
   if (wd !== 0) {
     v.w += step * wd
     return true
   }
-  const hd = heightDelta(key)
+  const hd = heightDelta(code)
   if (hd !== 0) {
     v.h += step * hd
     return true

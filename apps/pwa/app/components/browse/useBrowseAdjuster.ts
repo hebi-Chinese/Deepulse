@@ -53,13 +53,15 @@ function applyBrowseVars(v: BrowseVars): void {
 }
 
 function handleAdjustKey(e: KeyboardEvent, v: BrowseVars): boolean {
-  // step 单位是 vw/vh 的 %, weather canvas 占视口 60% 宽, 用 vinyl 的 0.1
-  // 步长每次只动 ~1px 肉眼无感; bump 到 1.0 默认 / 3.0 shift
+  // step 单位是 % (canvas 占视口比例大), 1.0 默认 / 3.0 shift 才看得出
   const moveStep = e.shiftKey ? 3 : 1
   const sizeStep = e.shiftKey ? 3 : 1
+  // 方向键用 e.key (ArrowLeft 等不受 IME 影响)
   if (handleMoveKey(e.key, v, moveStep)) return true
-  if (handleSizeKey(e.key, v, sizeStep)) return true
-  if (e.key === 'p' || e.key === 'P') {
+  // 缩放键用 e.code (Equal/Minus/Bracket/Comma/Period 是物理键位置, 不受
+  // 中文 IME 全角/半角影响 — 中文 Win 用户开全角时 + 会变 ＋ 跳过 e.key 检查)
+  if (handleSizeKey(e.code, v, sizeStep)) return true
+  if (e.code === 'KeyP') {
     printBrowseVars(v)
     return true
   }
@@ -105,19 +107,21 @@ function handleSizeKey(key: string, v: BrowseVars, step: number): boolean {
   return false
 }
 
-function zoomDelta(key: string): -1 | 0 | 1 {
-  if (key === '=' || key === '+') return 1
-  if (key === '-' || key === '_') return -1
+// 用 e.code (物理键位置) — Equal/Minus 不受 Shift 影响 (= 和 + 同 code)
+// 也兼容数字键盘 NumpadAdd / NumpadSubtract
+function zoomDelta(code: string): -1 | 0 | 1 {
+  if (code === 'Equal' || code === 'NumpadAdd') return 1
+  if (code === 'Minus' || code === 'NumpadSubtract') return -1
   return 0
 }
-function widthDelta(key: string): -1 | 0 | 1 {
-  if (key === ']') return 1
-  if (key === '[') return -1
+function widthDelta(code: string): -1 | 0 | 1 {
+  if (code === 'BracketRight') return 1
+  if (code === 'BracketLeft') return -1
   return 0
 }
-function heightDelta(key: string): -1 | 0 | 1 {
-  if (key === '.' || key === '>') return 1
-  if (key === ',' || key === '<') return -1
+function heightDelta(code: string): -1 | 0 | 1 {
+  if (code === 'Period') return 1
+  if (code === 'Comma') return -1
   return 0
 }
 
