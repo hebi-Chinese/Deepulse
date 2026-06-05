@@ -79,6 +79,8 @@ export function buildContainer(env: Env): Container {
   dbClient.applyMigrations(env.MIGRATIONS_DIR)
 
   const accountRepo = createNcmAccountRepo(dbClient)
+  // clock 先建 — NcmClient ctor 要它
+  const clock = createSystemClock()
 
   return {
     env,
@@ -90,9 +92,9 @@ export function buildContainer(env: Env): Container {
     tts: createTts(env.TTS_TYPE, { ttsUrl: env.TTS_URL }),
     calendar: createCalendar('noop'),
     // cookie 优先级：DB 持久化 > env > undefined（启动后 cold-start 会再尝试加载）
-    ncm: new NcmClient(env.NCM_COOKIE),
+    ncm: new NcmClient(env.NCM_COOKIE, clock),
     db: dbClient,
-    clock: createSystemClock(),
+    clock,
     songs: createSongRepo(dbClient),
     plays: createPlaysRepo(dbClient),
     bubbles: createBubblesRepo(dbClient),

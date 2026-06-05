@@ -33,6 +33,7 @@ import {
 } from './schemas.js'
 
 import type {
+  IClock,
   INcmClient,
   NcmAudioQuality,
   NcmLoginQrSession,
@@ -94,7 +95,11 @@ function rawToSong(raw: RawSong): Song {
 export class NcmClient implements INcmClient {
   private cookie: string | undefined
 
-  constructor(cookie: string | undefined) {
+  // clock 注入: snapshotAtMs 等时间戳走 IClock 而非 Date.now(), 测试可控 + 边界一致
+  constructor(
+    cookie: string | undefined,
+    private readonly clock: IClock,
+  ) {
     this.cookie = cookie
   }
 
@@ -350,7 +355,7 @@ export class NcmClient implements INcmClient {
       stylePreferences: (raw.style.data?.TAGS ?? []).map((t) => t.tagName),
       recentPlayed: mapRecentPlayed(raw.record),
       fmTrashSongIds: [],
-      snapshotAtMs: Date.now(),
+      snapshotAtMs: this.clock.nowMs(),
     }
   }
 }
