@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { TextDecoder } from 'node:util'
 
-import { ExternalServiceError } from '@claudio/shared'
+import { ExternalServiceError } from '@claudio/domain'
 import { execa } from 'execa'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'

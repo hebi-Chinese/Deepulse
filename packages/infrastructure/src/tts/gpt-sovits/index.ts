@@ -2,7 +2,7 @@
 // 流萤声线 + 中文专用 + emotion 5 选 1
 // 服务端默认返回 0.0.0.0 host 的 URL → 替换成 127.0.0.1 (前端浏览器才能放)
 
-import { ExternalServiceError } from '@claudio/shared'
+import { ExternalServiceError } from '@claudio/domain'
 import { request } from 'undici'
 import { z } from 'zod'
 

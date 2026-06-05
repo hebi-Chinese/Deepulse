@@ -2,8 +2,13 @@
 // 直接 import Binaryify/NeteaseCloudMusicApi 作为 Node 库（不 spawn 子进程）
 // 所有响应走 zod schema 校验 (Standards §1.3 + §6.1)
 
-import { toAlbumId, toArtistId, toPlaylistId, toSongId } from '@claudio/domain'
-import { ExternalServiceError } from '@claudio/shared'
+import {
+  ExternalServiceError,
+  toAlbumId,
+  toArtistId,
+  toPlaylistId,
+  toSongId,
+} from '@claudio/domain'
 // NCM 库是 CJS，ESM 不能 named import；解构重命名为 camelCase
 import NCM from 'NeteaseCloudMusicApi'
 

@@ -2,7 +2,7 @@
 // NcmSnapshotRepo · 存 NCM cold start 拉的用户画像
 // 单条记录 (id=1) 覆盖更新
 
-import { ValidationError } from '@claudio/shared'
+import { ValidationError } from '@claudio/domain'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 

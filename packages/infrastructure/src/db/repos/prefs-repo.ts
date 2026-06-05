@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // PrefsRepo · key/value JSON 偏好存储
 
-import { ValidationError } from '@claudio/shared'
+import { ValidationError } from '@claudio/domain'
 import { eq } from 'drizzle-orm'
 
 import { prefs } from '../schema.js'

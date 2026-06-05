@@ -12,7 +12,7 @@
 //   Body: { model, messages, stream?, response_format?, temperature?, max_tokens? }
 //   Stream: SSE, 每行 `data: {json}` 直到 `data: [DONE]`
 
-import { ExternalServiceError } from '@claudio/shared'
+import { ExternalServiceError } from '@claudio/domain'
 import { z } from 'zod'
 
 import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/application'

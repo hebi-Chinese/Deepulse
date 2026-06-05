@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // SongRepo · 缓存 NCM 歌曲元数据
 
-import { toAlbumId, toArtistId, toSongId } from '@claudio/domain'
-import { ValidationError } from '@claudio/shared'
+import { toAlbumId, toArtistId, toSongId, ValidationError } from '@claudio/domain'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-
 
 import { songs, type DbSong } from '../schema.js'
 
@@ -24,7 +22,9 @@ function parseArtists(raw: string, songId: string): readonly { id: string; name:
   }
   const validated = artistsJsonSchema.safeParse(parsed)
   if (!validated.success) {
-    throw new ValidationError(`song ${songId} artistsJson shape invalid: ${validated.error.message}`)
+    throw new ValidationError(
+      `song ${songId} artistsJson shape invalid: ${validated.error.message}`,
+    )
   }
   return validated.data
 }

@@ -1,7 +1,7 @@
 // callNcm · 统一封装 "调 NCM 库 → 校验 envelope → 校验 body shape" 三步
 // 业务方法不再写 `as RespType`,也不重复 assertOk(200) 逻辑
 
-import { ExternalServiceError } from '@claudio/shared'
+import { ExternalServiceError } from '@claudio/domain'
 import { z } from 'zod'
 
 const envelopeSchema = z.object({
@@ -23,10 +23,7 @@ export async function callNcm<T>(
 
   const env = envelopeSchema.safeParse(raw)
   if (!env.success) {
-    throw new ExternalServiceError(
-      'NCM',
-      `${op}: envelope shape invalid: ${env.error.message}`,
-    )
+    throw new ExternalServiceError('NCM', `${op}: envelope shape invalid: ${env.error.message}`)
   }
   if (env.data.status !== 200) {
     throw new ExternalServiceError(
@@ -38,10 +35,7 @@ export async function callNcm<T>(
 
   const body = bodySchema.safeParse(env.data.body)
   if (!body.success) {
-    throw new ExternalServiceError(
-      'NCM',
-      `${op}: body shape invalid: ${body.error.message}`,
-    )
+    throw new ExternalServiceError('NCM', `${op}: body shape invalid: ${body.error.message}`)
   }
   return body.data
 }
