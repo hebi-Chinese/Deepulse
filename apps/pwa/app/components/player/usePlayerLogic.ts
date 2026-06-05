@@ -66,7 +66,11 @@ export function usePlayerLogic(): PlayerLogic {
 
   const queueActions = useQueueActions(setState)
   const transportActions = useTransportActions(audioRef, setState)
-  const audioActions = useAudioActions(audioRef, setState)
+  // stateRef 给 toggleMute 用 — 不能在 setState updater 里写 audio.volume (React 可能重跑 updater)
+  // 用 ref 镜像让 callback 读到 current state, 写 DOM 在 setState 之外
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const audioActions = useAudioActions(audioRef, setState, stateRef)
 
   const actions: PlayerActions = { ...queueActions, ...transportActions, ...audioActions }
 
@@ -262,7 +266,11 @@ type AudioActions = Pick<
   'setVolume' | 'toggleMute' | 'onTimeUpdate' | 'onPlay' | 'onPause' | 'setError'
 >
 
-function useAudioActions(audioRef: AudioRef, setState: SetState): AudioActions {
+function useAudioActions(
+  audioRef: AudioRef,
+  setState: SetState,
+  stateRef: React.RefObject<PlayerState>,
+): AudioActions {
   const setVolume = useCallback(
     (v: number) => {
       const audio = audioRef.current
@@ -273,13 +281,13 @@ function useAudioActions(audioRef: AudioRef, setState: SetState): AudioActions {
   )
 
   const toggleMute = useCallback(() => {
+    // 从 ref 读真当前 state 而不是 updater 里 — updater 必须纯, DOM 写在 setState 之外
+    const curr = stateRef.current
+    const muted = !curr.muted
     const audio = audioRef.current
-    setState((s) => {
-      const muted = !s.muted
-      if (audio !== null) audio.volume = muted ? 0 : s.volume
-      return { ...s, muted }
-    })
-  }, [audioRef, setState])
+    if (audio !== null) audio.volume = muted ? 0 : curr.volume
+    setState((s) => ({ ...s, muted }))
+  }, [audioRef, setState, stateRef])
 
   const onTimeUpdate = useCallback(() => {
     const audio = audioRef.current

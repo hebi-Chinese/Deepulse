@@ -240,9 +240,10 @@ type ActionHandlerArgs = {
 function useChatAction(args: ActionHandlerArgs): (action: DjAction) => void {
   // 用 ref 持有 callback,避免每次 render 都新建 onAction
   const ref = useRef(args)
+  // args 本身是每次 render 新对象, 不能进 dep (会每帧触发 effect); 只 watch 内部 callback
   useEffect(() => {
     ref.current = args
-  }, [args.onPlay, args.onNext, args])
+  }, [args.onPlay, args.onNext])
 
   return useCallback((action: DjAction) => {
     void dispatchAction(action, ref.current)

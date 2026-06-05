@@ -345,7 +345,17 @@ export function useListenWeatherAdjuster(): boolean {
     const enabled = new URLSearchParams(window.location.search).get('adjust') === 'listen'
     if (!enabled) return
     setOn(true)
-    const vars: LWVars = { ...LW_DEFAULT }
+    // 深拷贝 corners — 浅展开会让 vars.corners === LW_DEFAULT.corners,
+    // 后续 v.corners[v.selected].x += dx 会污染模块级 default
+    const vars: LWVars = {
+      ...LW_DEFAULT,
+      corners: {
+        tl: { ...LW_DEFAULT.corners.tl },
+        tr: { ...LW_DEFAULT.corners.tr },
+        br: { ...LW_DEFAULT.corners.br },
+        bl: { ...LW_DEFAULT.corners.bl },
+      },
+    }
     const onKey = (e: KeyboardEvent): void => {
       if (handleLwKey(e, vars)) {
         e.preventDefault()
