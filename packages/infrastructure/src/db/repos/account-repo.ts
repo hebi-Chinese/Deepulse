@@ -12,12 +12,14 @@ import type { INcmAccountRepo } from '@claudio/application'
 export function createNcmAccountRepo(client: DbClient): INcmAccountRepo {
   return {
     async saveCookie(cookie: string): Promise<void> {
+      // INSERT 和 UPDATE 分支必须同一个时间戳, 否则两路径写入不同 loggedInAtMs
+      const nowMs = Date.now()
       client.db
         .insert(ncmAccount)
-        .values({ id: 1, cookie, loggedInAtMs: Date.now() })
+        .values({ id: 1, cookie, loggedInAtMs: nowMs })
         .onConflictDoUpdate({
           target: ncmAccount.id,
-          set: { cookie, loggedInAtMs: Date.now() },
+          set: { cookie, loggedInAtMs: nowMs },
         })
         .run()
     },

@@ -89,6 +89,8 @@ export class OpenAICompatBrain implements IBrain {
       throw new ExternalServiceError(
         this.providerLabel,
         `model returned non-JSON: ${e instanceof Error ? e.message : String(e)}`,
+        undefined,
+        { cause: e },
       )
     }
     const validated = schema.safeParse(json)
@@ -169,6 +171,8 @@ async function* parseSseContent(
     throw new ExternalServiceError(
       provider,
       `stream read failed: ${e instanceof Error ? e.message : String(e)}`,
+      undefined,
+      { cause: e },
     )
   } finally {
     reader.releaseLock()
