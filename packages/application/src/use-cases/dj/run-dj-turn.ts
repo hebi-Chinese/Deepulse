@@ -92,7 +92,10 @@ export async function* runDjTurn(
     yield { type: 'error', msg: errMsg(err) }
     return
   }
-  if (aborted) return
+  // 双重 check: streamBrainTokens 内部 detect 到 abort 时是悄悄 return (不抛),
+  // 外层 for-await 只看到流提前结束 — 必须再查一次 signal, 否则会把"被打断的半句"
+  // 当成正常完成 yield reply_done, 客户端收到误导信号
+  if (aborted || input.signal.aborted) return
 
   const { cleaned, actions } = parseInlineActions(fullReply)
   for (const action of actions) yield { type: 'action', action }
@@ -140,6 +143,9 @@ async function* streamBrainTokens(
 
   for await (const token of deps.brain.stream(messages, { signal })) {
     if (signal.aborted) return
+    // 先吐已就绪的 audio event (上一轮 TTS 完成) — 放在 token 前确保真交叉
+    // (放在 token 后会让 audio 总是慢于下一个 token, 退化成"半批处理")
+    for (const ready of pendingAudio.drainReady()) yield ready
     yield { type: 'token', text: token }
     for (const sentence of segmenter.push(token)) {
       const { cleaned } = parseInlineActions(sentence)
@@ -148,8 +154,6 @@ async function* streamBrainTokens(
       yield { type: 'sentence', idx, text: cleaned }
       pendingAudio.startTts(deps, cleaned, idx)
     }
-    // 检查已就绪的 audio 事件 (TTS 完成的)
-    for (const ready of pendingAudio.drainReady()) yield ready
   }
   const tail = segmenter.flush()
   if (tail.length > 0) {
