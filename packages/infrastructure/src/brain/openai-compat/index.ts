@@ -24,6 +24,10 @@ export type OpenAICompatConfig = {
   readonly providerLabel?: string
 }
 
+// 默认 3 min — 比 DeepSeek/OpenAI 实际响应长得多 (流式偶尔卡 30s+),
+// 同时挡住 brain 真死掉 (Ollama 冷启 / 网络挂) 让请求悬挂半小时把 WS 端拖死的极端
+const DEFAULT_TIMEOUT_MS = 180_000
+
 const streamChunkSchema = z.object({
   choices: z.array(
     z.object({
@@ -129,9 +133,20 @@ export class OpenAICompatBrain implements IBrain {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      ...(options?.signal !== undefined ? { signal: options.signal } : {}),
+      signal: mergeSignals(options?.signal),
     })
   }
+}
+
+// 合并 caller signal 跟默认 timeout — 任一触发就 abort. Node 20.3+ 有 AbortSignal.any,
+// 老 node 兜底用 caller signal (没 caller 就只用 timeout)
+function mergeSignals(callerSignal: AbortSignal | undefined): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(DEFAULT_TIMEOUT_MS)
+  if (callerSignal === undefined) return timeoutSignal
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([callerSignal, timeoutSignal])
+  }
+  return callerSignal
 }
 
 async function safeText(res: Response): Promise<string> {

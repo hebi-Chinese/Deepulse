@@ -18,6 +18,9 @@ import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify'
 
 type RawData = Buffer | ArrayBuffer | readonly Buffer[]
 
+// 服务端兜底: brain 卡死 / TTS 不返回时, turn 自爆, WS 不被一个回合永久占住
+const TURN_TIMEOUT_MS = 90_000
+
 function rawToString(raw: RawData): string {
   if (Buffer.isBuffer(raw)) return raw.toString('utf-8')
   if (raw instanceof ArrayBuffer) return Buffer.from(raw).toString('utf-8')
@@ -94,7 +97,16 @@ async function handleClientMsg(msg: WsClientMsg, ctx: ConnCtx): Promise<void> {
   const nextSeq = prev.turnSeq + 1
   ctx.state.current = { abortCtl: newCtl, turnSeq: nextSeq }
   const turnId = `t${String(nextSeq)}-${String(ctx.container.clock.nowMs())}`
-  await runTurnAndEmit(msg, turnId, newCtl.signal, ctx)
+  // 服务端兜底超时: brain/TTS 卡死也会自动 abort, 让 WS 不被永久挂死
+  const timeoutId = setTimeout(() => {
+    newCtl.abort()
+    ctx.log.warn({ turnId, timeoutMs: TURN_TIMEOUT_MS }, 'turn timed out, aborting')
+  }, TURN_TIMEOUT_MS)
+  try {
+    await runTurnAndEmit(msg, turnId, newCtl.signal, ctx)
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 // 调 runDjTurn use case, 把 DjTurnEvent 翻译成 WsServerMsg 帧
