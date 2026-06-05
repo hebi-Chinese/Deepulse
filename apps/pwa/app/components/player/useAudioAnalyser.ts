@@ -27,13 +27,16 @@ export type AnalyserHandle = {
 const attachedAudios = new WeakSet<HTMLAudioElement>()
 let sharedAnalyser: AnalyserNode | null = null
 
-export function useAudioAnalyser(audioRef: React.RefObject<HTMLAudioElement | null>): AnalyserHandle {
+export function useAudioAnalyser(
+  audioRef: React.RefObject<HTMLAudioElement | null>,
+): AnalyserHandle {
   const barsRef = useRef<Float32Array>(new Float32Array(BAR_COUNT))
   const activeRef = useRef(false)
 
   useEffect(() => {
     const audio = audioRef.current
     if (audio === null) return undefined
+    let stopLoop: (() => void) | null = null
 
     const tryAttach = (): void => {
       if (!isSharedAudioCtxRunning()) return
@@ -55,7 +58,9 @@ export function useAudioAnalyser(audioRef: React.RefObject<HTMLAudioElement | nu
         }
       }
       activeRef.current = true
-      startLoop(sharedAnalyser, barsRef)
+      // 停掉旧 loop (StrictMode 双 mount / 同 audio 多次 play 不会累积 raf)
+      stopLoop?.()
+      stopLoop = startLoop(sharedAnalyser, barsRef)
     }
 
     const onPlay = (): void => {
@@ -66,6 +71,8 @@ export function useAudioAnalyser(audioRef: React.RefObject<HTMLAudioElement | nu
 
     return () => {
       audio.removeEventListener('play', onPlay)
+      stopLoop?.()
+      activeRef.current = false
     }
   }, [audioRef])
 
@@ -75,12 +82,12 @@ export function useAudioAnalyser(audioRef: React.RefObject<HTMLAudioElement | nu
   }
 }
 
-let activeRaf = 0
-
-function startLoop(analyser: AnalyserNode, barsRef: BarsRef): void {
-  cancelAnimationFrame(activeRaf)
+// 每次 attach 启一个 loop, 返回 stop. 闭包持 raf id, 不再用模块级单例
+// (旧实现 activeRaf 是模块级, 多 instance / StrictMode 双 mount 会互相 cancel)
+function startLoop(analyser: AnalyserNode, barsRef: BarsRef): () => void {
   const freqData = new Uint8Array(analyser.frequencyBinCount)
   const next = new Float32Array(BAR_COUNT)
+  let raf = 0
   const tick = (): void => {
     analyser.getByteFrequencyData(freqData)
     const smoothed = barsRef.current
@@ -93,9 +100,12 @@ function startLoop(analyser: AnalyserNode, barsRef: BarsRef): void {
       next[i] = prev * SMOOTHING + raw * (1 - SMOOTHING)
     }
     barsRef.current.set(next)
-    activeRaf = requestAnimationFrame(tick)
+    raf = requestAnimationFrame(tick)
   }
-  activeRaf = requestAnimationFrame(tick)
+  raf = requestAnimationFrame(tick)
+  return () => {
+    cancelAnimationFrame(raf)
+  }
 }
 
 export { BAR_COUNT }
