@@ -43,12 +43,15 @@ type Ripple = {
 
 const DROPS_PER_1000PX = 0.16 // 每 1000 px² 一滴 → 1920×1080 ≈ 330 滴 (从 0.35 调低保 60fps)
 const LAYER_SPEEDS: readonly [number, number, number] = [200, 420, 700] // px/s
-const LAYER_LENS: readonly [number, number, number] = [8, 14, 22]
+// 主人 2026-06-05: 太细长了不行 — 长度对半砍 + 宽度加一档, 让雨像短斜划而不是垂直长 streaks
+// 历次: [8, 14, 22] (太长) → [4, 7, 11] (短一半)
+const LAYER_LENS: readonly [number, number, number] = [4, 7, 11]
 // alpha 几度调 → 找夜色雨平衡
 // 历次: 0.35/0.55/0.85 (白线发光) → 0.22/0.36/0.55 (还亮)
 //      → 0.12/0.20/0.32 (深蓝太暗看不见) → 0.16/0.28/0.45 (中等)
 const LAYER_ALPHAS: readonly [number, number, number] = [0.16, 0.28, 0.45]
-const LAYER_WIDTHS: readonly [number, number, number] = [0.9, 1.3, 1.8]
+// 历次: 0.9/1.3/1.8 (太细) → 1.4/1.9/2.6 (粗一档让短雨看得见)
+const LAYER_WIDTHS: readonly [number, number, number] = [1.4, 1.9, 2.6]
 // 雨颜色: 从近白 (220,235,255) → 冷蓝灰 (160,190,220) → 深蓝看不见 (90,130,170)
 // → 中等夜蓝 (130,165,200), 跟夜空 + 月光投影一档
 const DROP_COLOR_RGB = '130, 165, 200'
