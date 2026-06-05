@@ -1018,19 +1018,20 @@ nextjs-portal {
   pointer-events: none;
 }
 
-/* Canvas 粒子层 — bounding rect + clip-path 梯形遮罩, 跟 listen-bg.png 斜窗户对齐
-   主人 ?adjust=listen 1234 选角 + 方向键拉定 (主人 2026-06-04) */
+/* Canvas 粒子层 — 满 viewport, clip-path polygon 直接定 4 个 viewport 点
+   旧的 bounding rect + 角偏移两段式废了 — 那个模型让 polygon 角点跑出 canvas box,
+   clip-path 实际不裁切, 雨溢出. 现在 canvas = viewport, polygon ∩ viewport 自然裁出梯形.
+   主人 ?adjust=listen 1234 选角 + 方向键拉定 (主人 2026-06-05) */
 .scene-weather-canvas {
   position: fixed;
-  left: var(--listen-weather-left, -2.6%);
-  top: var(--listen-weather-top, 0);
-  width: var(--listen-weather-w, 52%);
-  height: var(--listen-weather-h, 65%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   clip-path: polygon(
-    calc(0% + var(--listen-weather-tl-x, -16.8%)) calc(0% + var(--listen-weather-tl-y, -52.2%)),
-    calc(100% + var(--listen-weather-tr-x, 66.8%)) calc(0% + var(--listen-weather-tr-y, -42.2%)),
-    calc(100% + var(--listen-weather-br-x, 66.4%)) calc(100% + var(--listen-weather-br-y, 8.6%)),
-    calc(0% + var(--listen-weather-bl-x, -17.2%)) calc(100% + var(--listen-weather-bl-y, 46.6%))
+    var(--listen-weather-tl-x, -11.3%) var(--listen-weather-tl-y, -33.9%),
+    var(--listen-weather-tr-x, 84.1%) var(--listen-weather-tr-y, -27.4%),
+    var(--listen-weather-br-x, 83.9%) var(--listen-weather-br-y, 70.6%),
+    var(--listen-weather-bl-x, -11.5%) var(--listen-weather-bl-y, 95.3%)
   );
   z-index: 3;
   pointer-events: none;
@@ -1040,13 +1041,12 @@ nextjs-portal {
   z-index: 10;
 }
 
-/* SVG 梯形描线 — 跟 canvas 同矩形, viewBox 留余地给负偏移 */
+/* SVG 梯形描线 — 满 viewport, viewBox 0-100 直接对应 viewport % */
 .listen-weather-outline {
   position: fixed;
-  left: var(--listen-weather-left, -2.6%);
-  top: var(--listen-weather-top, 0);
-  width: var(--listen-weather-w, 52%);
-  height: var(--listen-weather-h, 65%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 11;
   pointer-events: none;
   overflow: visible;

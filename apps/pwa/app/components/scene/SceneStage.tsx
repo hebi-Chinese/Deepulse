@@ -302,36 +302,29 @@ function VinylAdjustHud() {
 // ─── ?adjust=listen 调试模式 (Listen 透视梯形 canvas) ────────────────────
 // 触发: URL 加 ?adjust=listen
 // 操作:
-//   方向键      移位 (Shift = 大步 1%, 默认 0.2%) — 没选角时移整体, 选了角时只移那个角
-//   + / -       同比缩放整个 bounding rect
-//   [ / ]       只调 bounding 宽
-//   , / .       只调 bounding 高
+//   方向键      移位 (Shift = 大步 1%, 默认 0.2%) — 没选角时整体平移 4 个角, 选了角只移那个
 //   1 / 2 / 3 / 4   选角 TL / TR / BR / BL (再按一次同号取消)
 //   0           取消选角
 //   P           console.log + alert 当前 CSS
+//
+// 坐标系: viewport % (不是 box 内 % offset). canvas 满屏, polygon 直接定 4 个 viewport 点.
+// 旧的 left/top/w/h + corner offset 双层模型已废 — 那个模型让 polygon 角点跑出 canvas box,
+// clip-path 实际不裁切, 雨溢出.
 
 type Corner = 'tl' | 'tr' | 'br' | 'bl'
-type CornerOffset = { x: number; y: number } // 单位 %
+type CornerPoint = { x: number; y: number } // viewport %
 type LWVars = {
-  left: number
-  top: number
-  w: number
-  h: number
-  // 4 角偏移 — 默认全 0 = 完美矩形, 主人调到梯形对齐斜窗户
-  corners: Record<Corner, CornerOffset>
+  corners: Record<Corner, CornerPoint>
   selected: Corner | null
 }
-// 跟 globals.css .scene-weather-canvas 的 var fallback 一致 — 主人 ?adjust=listen 拉定的斜窗户梯形
+// 跟 globals.css .scene-weather-canvas 的 var fallback 一致 (viewport %)
+// 由旧两段式数值 (left=-2.6 top=0 w=52 h=65 + corner offset) 换算后烧定
 const LW_DEFAULT: LWVars = {
-  left: -2.6,
-  top: 0,
-  w: 52,
-  h: 65,
   corners: {
-    tl: { x: -16.8, y: -52.2 },
-    tr: { x: 66.8, y: -42.2 },
-    br: { x: 66.4, y: 8.6 },
-    bl: { x: -17.2, y: 46.6 },
+    tl: { x: -11.3, y: -33.9 },
+    tr: { x: 84.1, y: -27.4 },
+    br: { x: 83.9, y: 70.6 },
+    bl: { x: -11.5, y: 95.3 },
   },
   selected: null,
 }
@@ -377,11 +370,6 @@ export function useListenWeatherAdjuster(): boolean {
 
 function applyLwVars(v: LWVars): void {
   const r = document.documentElement
-  r.style.setProperty('--listen-weather-left', `${v.left.toFixed(2)}%`)
-  r.style.setProperty('--listen-weather-top', `${v.top.toFixed(2)}%`)
-  r.style.setProperty('--listen-weather-w', `${v.w.toFixed(2)}%`)
-  r.style.setProperty('--listen-weather-h', `${v.h.toFixed(2)}%`)
-  // 4 角偏移 — 每个角相对它在 bounding rect 的天然位置的偏移量, 单位 %
   ;(['tl', 'tr', 'br', 'bl'] as const).forEach((c) => {
     r.style.setProperty(`--listen-weather-${c}-x`, `${v.corners[c].x.toFixed(2)}%`)
     r.style.setProperty(`--listen-weather-${c}-y`, `${v.corners[c].y.toFixed(2)}%`)
@@ -389,10 +377,8 @@ function applyLwVars(v: LWVars): void {
 }
 
 function handleLwKey(e: KeyboardEvent, v: LWVars): boolean {
-  // 微调模式 — 默认 0.2/0.1, Shift 大步 1.0/0.5
-  const moveStep = e.shiftKey ? 1.0 : 0.2
-  const sizeStep = e.shiftKey ? 0.5 : 0.1
-  // 数字键 1/2/3/4 选角, 0 取消选角
+  // 默认 0.2%, Shift 大步 1%
+  const step = e.shiftKey ? 1.0 : 0.2
   const corner = digitToCorner(e.code)
   if (corner !== undefined) {
     v.selected = v.selected === corner ? null : corner
@@ -402,10 +388,7 @@ function handleLwKey(e: KeyboardEvent, v: LWVars): boolean {
     v.selected = null
     return true
   }
-  // 方向键: 选了角就移那个角, 没选角就移整个 bounding rect
-  if (handleLwMoveKey(e.key, v, moveStep)) return true
-  // 缩放键只动 bounding rect (跟选角无关)
-  if (handleLwSizeKey(e.code, v, sizeStep)) return true
+  if (handleLwMoveKey(e.key, v, step)) return true
   if (e.code === 'KeyP') {
     printLwVars(v)
     return true
@@ -425,12 +408,15 @@ function handleLwMoveKey(key: string, v: LWVars, step: number): boolean {
   const dx = arrowDx(key, step)
   const dy = arrowDy(key, step)
   if (dx === 0 && dy === 0) return false
+  // 选了角只动那个角; 没选角整体平移 4 个角
   if (v.selected !== null) {
     v.corners[v.selected].x += dx
     v.corners[v.selected].y += dy
   } else {
-    v.left += dx
-    v.top += dy
+    for (const c of ['tl', 'tr', 'br', 'bl'] as const) {
+      v.corners[c].x += dx
+      v.corners[c].y += dy
+    }
   }
   return true
 }
@@ -446,35 +432,13 @@ function arrowDy(key: string, step: number): number {
   return 0
 }
 
-function handleLwSizeKey(code: string, v: LWVars, step: number): boolean {
-  const z = zoomDelta(code)
-  if (z !== 0) {
-    v.w += step * z
-    v.h += step * z
-    return true
-  }
-  const wd = widthDelta(code)
-  if (wd !== 0) {
-    v.w += step * wd
-    return true
-  }
-  const hd = heightDelta(code)
-  if (hd !== 0) {
-    v.h += step * hd
-    return true
-  }
-  return false
-}
-
 function printLwVars(v: LWVars): void {
-  const rect = `--listen-weather-left: ${v.left.toFixed(1)}%; --listen-weather-top: ${v.top.toFixed(1)}%; --listen-weather-w: ${v.w.toFixed(1)}%; --listen-weather-h: ${v.h.toFixed(1)}%;`
-  const corners = (['tl', 'tr', 'br', 'bl'] as const)
+  const css = (['tl', 'tr', 'br', 'bl'] as const)
     .map(
       (c) =>
         `--listen-weather-${c}-x: ${v.corners[c].x.toFixed(1)}%; --listen-weather-${c}-y: ${v.corners[c].y.toFixed(1)}%;`,
     )
     .join(' ')
-  const css = `${rect} ${corners}`
   // eslint-disable-next-line no-console -- intentional: dev adjust mode
   console.log('[listen-weather-adjust]', css)
   window.alert(css)
@@ -485,8 +449,7 @@ export function ListenWeatherAdjustHud() {
     <div className="adjust-hud" aria-hidden="true">
       <div>
         listen-weather adjust · <kbd>1234</kbd> pick corner · <kbd>0</kbd> all · <kbd>arrows</kbd>{' '}
-        move · <kbd>+/-</kbd> scale · <kbd>[/]</kbd> width · <kbd>,/.</kbd> height ·{' '}
-        <kbd>shift</kbd> = big step · <kbd>P</kbd> print
+        move · <kbd>shift</kbd> = big step · <kbd>P</kbd> print
       </div>
     </div>
   )
@@ -496,21 +459,21 @@ export function ListenWeatherAdjustHud() {
 // 监听 window resize 事件 (hook 改 var 后也派了 resize) 来重画
 type CornerRefs = Record<Corner, SVGCircleElement | null>
 
-function readCornerCoords(): Record<Corner, CornerOffset> {
+function readCornerCoords(): Record<Corner, CornerPoint> {
   const r = document.documentElement
   const read = (name: string): number => parseFloat(r.style.getPropertyValue(name) || '0')
   return {
     tl: { x: read('--listen-weather-tl-x'), y: read('--listen-weather-tl-y') },
-    tr: { x: 100 + read('--listen-weather-tr-x'), y: read('--listen-weather-tr-y') },
-    br: { x: 100 + read('--listen-weather-br-x'), y: 100 + read('--listen-weather-br-y') },
-    bl: { x: read('--listen-weather-bl-x'), y: 100 + read('--listen-weather-bl-y') },
+    tr: { x: read('--listen-weather-tr-x'), y: read('--listen-weather-tr-y') },
+    br: { x: read('--listen-weather-br-x'), y: read('--listen-weather-br-y') },
+    bl: { x: read('--listen-weather-bl-x'), y: read('--listen-weather-bl-y') },
   }
 }
 
 function paintOutline(
   poly: SVGPolygonElement | null,
   circles: CornerRefs,
-  c: Record<Corner, CornerOffset>,
+  c: Record<Corner, CornerPoint>,
 ): void {
   const fmt = (n: number): string => n.toFixed(2)
   poly?.setAttribute(
@@ -538,10 +501,11 @@ export function ListenWeatherOutline() {
       window.removeEventListener('resize', update)
     }
   }, [])
+  // SVG 满 viewport, viewBox 0-100 直接对应 viewport %. overflow:visible 让负数/>100 也能画出来
   return (
     <svg
       className="listen-weather-outline"
-      viewBox="-50 -50 200 200"
+      viewBox="0 0 100 100"
       preserveAspectRatio="none"
       aria-hidden="true"
     >
