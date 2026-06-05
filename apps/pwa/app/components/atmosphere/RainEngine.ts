@@ -44,13 +44,14 @@ type Ripple = {
 const DROPS_PER_1000PX = 0.16 // 每 1000 px² 一滴 → 1920×1080 ≈ 330 滴 (从 0.35 调低保 60fps)
 const LAYER_SPEEDS: readonly [number, number, number] = [200, 420, 700] // px/s
 const LAYER_LENS: readonly [number, number, number] = [8, 14, 22]
-// alpha 从 0.35/0.55/0.85 下调 → 若隐若现 (主人原话: 太不自然了, 要若隐若现一点)
-// 0.1/0.18/0.32 太淡看不见, 0.35/0.55/0.85 太亮发白, 折中 0.22/0.36/0.55
-const LAYER_ALPHAS: readonly [number, number, number] = [0.22, 0.36, 0.55]
+// alpha 几度调 → 找夜色雨平衡
+// 历次: 0.35/0.55/0.85 (白线发光) → 0.22/0.36/0.55 (还亮)
+//      → 0.12/0.20/0.32 (深蓝太暗看不见) → 0.16/0.28/0.45 (中等)
+const LAYER_ALPHAS: readonly [number, number, number] = [0.16, 0.28, 0.45]
 const LAYER_WIDTHS: readonly [number, number, number] = [0.9, 1.3, 1.8]
-// 雨颜色从纯白 (220,235,255) 改偏冷蓝灰 — 主人原话: 至少颜色不能是白色
-// 接近窗外夜空冷光, 不喧宾夺主
-const DROP_COLOR_RGB = '160, 190, 220'
+// 雨颜色: 从近白 (220,235,255) → 冷蓝灰 (160,190,220) → 深蓝看不见 (90,130,170)
+// → 中等夜蓝 (130,165,200), 跟夜空 + 月光投影一档
+const DROP_COLOR_RGB = '130, 165, 200'
 
 const WIND_BASE_TILT = 0.12 // 默认风向 (右下倾)
 const WIND_POINTER_GAIN = 0.4 // 鼠标 x 偏移对风向影响
