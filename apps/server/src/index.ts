@@ -5,10 +5,10 @@ import { createLogger, loadEnv } from '@claudio/shared'
 import cors from '@fastify/cors'
 import websocketPlugin from '@fastify/websocket'
 import Fastify from 'fastify'
+import { ZodError } from 'zod'
 
 import { createDiscoverPlugin } from './api/discover.js'
 import { createDjWsPlugin } from './api/dj-ws.js'
-import { createDjPlugin } from './api/dj.js'
 import { createFeedbackPlugin } from './api/feedback.js'
 import { createLoginPlugin } from './api/login.js'
 import { createPlaylistPlugin } from './api/playlist.js'
@@ -18,6 +18,30 @@ import { createSnapshotPlugin } from './api/snapshot.js'
 import { createSongPlugin } from './api/song.js'
 import { runColdStart } from './cold-start.js'
 import { buildContainer } from './composition.js'
+
+import type { Container } from './composition.js'
+
+// 结构化 generic 比 ReturnType<typeof Fastify> 准 — 后者经 overload 推成 any
+type AppLike = { readonly close: () => Promise<unknown> }
+type LogLike = {
+  readonly info: (o: unknown, m?: string) => void
+  readonly error: (o: unknown, m?: string) => void
+}
+
+function installShutdown(app: AppLike, container: Container, log: LogLike): void {
+  const shutdown = async (signal: string): Promise<void> => {
+    log.info({ signal }, 'shutting down')
+    try {
+      await app.close()
+      container.db.close()
+    } catch (err) {
+      log.error({ err }, 'shutdown error')
+    }
+    process.exit(0)
+  }
+  process.on('SIGINT', () => void shutdown('SIGINT'))
+  process.on('SIGTERM', () => void shutdown('SIGTERM'))
+}
 
 async function main(): Promise<void> {
   const env = loadEnv()
@@ -33,6 +57,16 @@ async function main(): Promise<void> {
   await runColdStart(container, logger)
 
   const app = Fastify({ loggerInstance: logger })
+
+  // ZodError → 400 + issues, 其他错 → 500 不漏堆栈
+  app.setErrorHandler((err, req, reply) => {
+    if (err instanceof ZodError) {
+      req.log.warn({ issues: err.issues, path: req.url }, 'validation failed')
+      return reply.code(400).send({ error: 'Invalid request', issues: err.issues })
+    }
+    req.log.error({ err, path: req.url }, 'request failed')
+    return reply.code(500).send({ error: 'Internal error' })
+  })
 
   await app.register(cors, {
     origin: [
@@ -57,21 +91,9 @@ async function main(): Promise<void> {
   await app.register(createSnapshotPlugin(container))
   await app.register(createPlaylistPlugin(container))
   await app.register(createPlaysPlugin(container))
-  await app.register(createDjPlugin(container))
   await app.register(createDjWsPlugin(container))
 
-  const shutdown = async (signal: string): Promise<void> => {
-    logger.info({ signal }, 'shutting down')
-    try {
-      await app.close()
-      container.db.close()
-    } catch (err) {
-      logger.error({ err }, 'shutdown error')
-    }
-    process.exit(0)
-  }
-  process.on('SIGINT', () => void shutdown('SIGINT'))
-  process.on('SIGTERM', () => void shutdown('SIGTERM'))
+  installShutdown(app, container, logger)
 
   try {
     await app.listen({ port: env.SERVER_PORT, host: '127.0.0.1' })

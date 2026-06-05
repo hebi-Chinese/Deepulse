@@ -54,6 +54,11 @@ export function createDjWsPlugin(container: Container): FastifyPluginAsync {
         })
       })
 
+      // 必须挂 'error' listener — Node EventEmitter 没监听者会把 error 当 uncaught throw, 整个进程崩
+      socket.on('error', (err: Error) => {
+        log.error({ err }, 'ws socket error')
+      })
+
       socket.on('close', () => {
         state.current.abortCtl?.abort()
         log.info('ws closed')
@@ -149,7 +154,11 @@ function eventToFrame(ev: DjTurnEvent): WsServerMsg {
 
 function send(socket: WebSocket, msg: WsServerMsg): void {
   if (socket.readyState !== socket.OPEN) return
-  socket.send(JSON.stringify(msg))
+  try {
+    socket.send(JSON.stringify(msg))
+  } catch {
+    // EPIPE / ECONNRESET: 对端已死, 没必要再 propagate (catch 调用方也会再 send error 帧, 又抛一次)
+  }
 }
 
 function errMsg(e: unknown): string {

@@ -3,10 +3,8 @@
 import { toSongId } from '@claudio/domain'
 import { z } from 'zod'
 
-
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'
-
 
 const recordBody = z.object({
   songId: z.string().min(1),
@@ -24,7 +22,7 @@ export function createPlaysPlugin(container: Container): FastifyPluginAsync {
       const body = recordBody.parse(req.body)
       await container.plays.recordPlay({
         songId: toSongId(body.songId),
-        playedAtMs: Date.now(),
+        playedAtMs: container.clock.nowMs(),
         finished: body.finished,
         source: body.source,
       })
