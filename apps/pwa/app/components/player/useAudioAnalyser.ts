@@ -1,4 +1,4 @@
-// useAudioAnalyser · 把 <audio> ref 接到共享 AudioContext 的 AnalyserNode
+// useAudioAnalyser · 把 <audio> ref 接到共享 AudioContext, 同时跑 analyser 旁路 tap
 // 返回 ref-based bars 数据,VizBars 自己 rAF 读写 DOM,**不走 React state** (帧率太高会炸)
 //
 // 关键约束:
@@ -6,10 +6,17 @@
 //   如果 ctx 是 suspended,即使 audio.paused=false 也没声音。
 //   所以: 必须复用 sharedAudioCtx (unlock 已经在 gesture 内 resume 过的那个),
 //   并且**只有 ctx 已 running 时才 attach**;否则放弃可视化保住声音。
+//
+// Routing (主人 2026-06-07 拍板 "视觉不跟 DJ 跳, ducking 可以做"):
+//   source ─┬─→ musicGain ─→ destination   (听得到的路径, 受 ducking 控制)
+//           └─→ analyser                    (旁路 tap, 不连 destination 不出声,
+//                                            只用来读 FFT 给 VizBars)
+//   这样 DJ 说话时 musicGain 滑到 0.25, 音乐变小;
+//   analyser 看的是 source 原始信号 → 视觉雨/光跟实际音乐力度走, 不被 duck 拖累.
 
 import { useEffect, useRef } from 'react'
 
-import { getSharedAudioCtx, isSharedAudioCtxRunning } from './sharedAudioCtx'
+import { getMusicGainNode, getSharedAudioCtx, isSharedAudioCtxRunning } from './sharedAudioCtx'
 
 const FFT_SIZE = 256
 const USED_BINS = 64
@@ -45,12 +52,16 @@ export function useAudioAnalyser(
       if (sharedAnalyser === null) {
         sharedAnalyser = ctx.createAnalyser()
         sharedAnalyser.fftSize = FFT_SIZE
-        sharedAnalyser.connect(ctx.destination)
+        // 注意: analyser **不** connect(destination) — 它是旁路 tap.
+        // 出声路径由 source → musicGain → destination 负责 (musicGain 自己接 destination).
       }
+      const musicGain = getMusicGainNode()
+      if (musicGain === null) return
       if (!attachedAudios.has(audio)) {
         try {
           const source = ctx.createMediaElementSource(audio)
-          source.connect(sharedAnalyser)
+          source.connect(musicGain) // 出声路径 (受 ducking 控制)
+          source.connect(sharedAnalyser) // 旁路 tap (不出声, 只读 FFT)
           attachedAudios.add(audio)
         } catch {
           // 已 attach 过会抛 — 忽略

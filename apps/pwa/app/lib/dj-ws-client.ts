@@ -13,6 +13,8 @@
 import { wsServerMsgSchema } from '@claudio/shared/dj-ws'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { duckMusic, restoreMusic } from '../components/player/sharedAudioCtx'
+
 import { env } from './env'
 
 import type { DjContext, WsClientMsg, WsServerMsg, DjActionKind } from '@claudio/shared/dj-ws'
@@ -247,15 +249,21 @@ function sendRaw(ws: WebSocket | null, msg: WsClientMsg): boolean {
 
 // ─── 音频队列: 一句一播, 不抢 ────────────────────────────────────────────
 
+// queue idle → busy 转换时 duck 音乐, busy → idle 时 restore. 跨句子的间隙不抖动
+// (一段 DJ 多句串场: 第一句进队列 duck, 最后一句 onended 队列真空才 restore)
 class SequentialAudioQueue {
   private queue: string[] = []
   private current: HTMLAudioElement | null = null
   private stopped = false
+  private isDucking = false
 
   enqueue(url: string): void {
     if (this.stopped) return
     this.queue.push(url)
-    if (this.current === null) this.playNext()
+    if (this.current === null) {
+      this.startDuckIfNeeded()
+      this.playNext()
+    }
   }
 
   stop(): void {
@@ -266,12 +274,14 @@ class SequentialAudioQueue {
       this.current.src = ''
       this.current = null
     }
+    this.endDuckIfNeeded()
   }
 
   private playNext(): void {
     const next = this.queue.shift()
     if (next === undefined) {
       this.current = null
+      this.endDuckIfNeeded()
       return
     }
     const audio = new Audio(next)
@@ -287,6 +297,18 @@ class SequentialAudioQueue {
       // 自动播放被拦截 (新页面无用户手势) — 跳过这条,后续仍尝试
       this.playNext()
     })
+  }
+
+  private startDuckIfNeeded(): void {
+    if (this.isDucking) return
+    this.isDucking = true
+    duckMusic()
+  }
+
+  private endDuckIfNeeded(): void {
+    if (!this.isDucking) return
+    this.isDucking = false
+    restoreMusic()
   }
 }
 
