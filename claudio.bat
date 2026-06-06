@@ -59,6 +59,24 @@ if /I "%TTS%"=="voxcpm" (
     rem optional: set "VOXCPM_VOICE_DESIGN=温柔女声, 25 岁, 中性情绪"
 )
 
+rem ---- voxcpm auto-launch: 自起 :8001 server, 主人不用另开窗 ----
+rem 8001 已经有人在跑就跳过 (重启 bat 不会重复起)
+if /I "%TTS%"=="voxcpm" (
+    netstat -ano | findstr ":8001 " | findstr LISTENING >nul 2>&1
+    if errorlevel 1 (
+        echo Launching VoxCPM server in separate window...
+        rem 优先用 venv 里 python; 没 venv 就 fallback global
+        if exist "%~dp0tools\voxcpm-server\.venv\Scripts\python.exe" (
+            start "VoxCPM TTS Server" /D "%~dp0tools\voxcpm-server" .venv\Scripts\python.exe app.py
+        ) else (
+            start "VoxCPM TTS Server" /D "%~dp0tools\voxcpm-server" python app.py
+        )
+        echo VoxCPM launching... first DJ chat may wait 30s while model loads.
+    ) else (
+        echo VoxCPM already running on :8001, skip launch.
+    )
+)
+
 echo ============================================
 echo   Claudio  -  AI Music Radio
 echo --------------------------------------------
@@ -74,6 +92,7 @@ echo --------------------------------------------
 echo   PWA      http://localhost:3000
 echo   Server   http://localhost:8787
 echo   Press Ctrl+C to stop (PWA + Server)
+if /I "%TTS%"=="voxcpm" echo   TIP: VoxCPM server runs in its own window — close it separately on shutdown
 echo ============================================
 echo.
 

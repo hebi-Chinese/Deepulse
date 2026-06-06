@@ -35,11 +35,21 @@ set VOXCPM_MODEL=D:\models\VoxCPM2     # 已下载到本地的路径
 
 ## 启动
 
+平常**不用手动起** — `claudio.bat` 在 `TTS=voxcpm` 时会自动 `start` 一个新窗
+跑 `python app.py`. 主人只管 `claudio.bat` 双击.
+
+bat 会先看 :8001 端口在不在跑 — 在就跳过, 不重复起.
+
+想单独跑 (e.g. 不开 Claudio 只想测 vox):
+
 ```bash
 python app.py
 ```
 
 监听 `:8001`. 看到 `Uvicorn running on http://127.0.0.1:8001` 就 ok.
+
+shutdown 时 Claudio 那边 Ctrl+C 只关 PWA + server, 不会关 vox 窗 (它是独立
+进程). vox 窗自己关 (X 掉那个 "VoxCPM TTS Server" 标题的窗).
 
 ## 测一下
 
@@ -100,23 +110,19 @@ curl -X POST http://127.0.0.1:8001/synthesize ^
 
 ## 怎么让 Claudio 用上
 
-`claudio.bat` 顶部:
+`claudio.bat` 顶部把 `TTS` 改 `voxcpm`:
 
 ```bat
-set TTS=voxcpm
-set VOXCPM_URL=http://127.0.0.1:8001
-set VOXCPM_VOICE_DESIGN=温柔女声, 25 岁, 中性情绪
+set "TTS=voxcpm"
 ```
 
-或者直接 env:
+然后双击 `claudio.bat` — 它会自动:
 
-```bat
-set TTS_TYPE=voxcpm
-set VOXCPM_URL=http://127.0.0.1:8001
-```
+1. 检查 :8001 在不在 (在就跳过)
+2. 不在就 `start "VoxCPM TTS Server" /D tools\voxcpm-server .venv\Scripts\python.exe app.py` 起新窗
+3. 平行起 PWA + Claudio server
 
-然后**先起本 server** (`python app.py`), 再起 Claudio (`claudio.bat`).
-Claudio TTS 调用就会走到 vox, DJ 的话声音变成 voice_design 描述的那种.
+首次启动 vox 要 ~30s 加载模型, 这段时间 DJ 喊话可能等一下. 后续都秒回.
 
 ## Stuck
 

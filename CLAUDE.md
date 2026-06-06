@@ -133,16 +133,20 @@ set VOXCPM_VOICE_DESIGN=温柔女声, 25 岁, 中性情绪
 
 **AI 助手该问主人**: "DJ 要不要发声? 不发声直接 mock; 想要声音 fork 者推 voxcpm (`tools/voxcpm-server` 一键起, voice design 自然语言描声); 主人已有 GPT-SoVITS server 就 gpt-sovits."
 
-**起 voxcpm** (一次性, ~10 分钟):
+**起 voxcpm**:
 
-```bash
-cd tools/voxcpm-server
-python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt
-python app.py    # :8001, 首次拉模型 ~4GB
-```
+1. **一次性装** (~10 分钟, 首次):
 
-然后 `claudio.bat` 顶部改 `set "TTS=voxcpm"` 重起.
+   ```bash
+   cd tools/voxcpm-server
+   python -m venv .venv && .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. **日常用**: `claudio.bat` 顶部 `set "TTS=voxcpm"`. 双击 bat — 它会自动
+   `start` 一个新窗跑 `python app.py` (8001 已在跑就跳过). 主人不用另开窗.
+
+首次启动 vox 加载模型 ~30s, 这段时间 DJ 喊话会等; 后续秒回.
 
 ---
 
@@ -170,7 +174,7 @@ python app.py    # :8001, 首次拉模型 ~4GB
 
 ## 项目布局速查 (AI 助手定位用)
 
-```
+```text
 apps/
   pwa/        Next.js 15 + React 19 + Tailwind 4 — 浏览器界面
   server/     Fastify 5 + WebSocket — 后端 HTTP/WS, 编排用例
