@@ -85,6 +85,8 @@ function BrowseRightColumn({
           currentIndex={logic.state.currentIndex}
           onJump={onPlay}
           onRemove={logic.actions.removeFromQueue}
+          onMove={logic.actions.moveInQueue}
+          onClear={logic.actions.clearQueue}
         />
       </Card>
       <Card>

@@ -17,6 +17,8 @@ export type PlayerActions = {
   readonly queueSong: (song: ApiSong) => void
   readonly insertNext: (song: ApiSong) => void
   readonly removeFromQueue: (id: string) => void
+  readonly moveInQueue: (fromId: string, toId: string) => void
+  readonly clearQueue: () => void
   readonly togglePlay: () => void
   readonly handlePrev: () => void
   readonly handleNext: () => void
@@ -167,7 +169,10 @@ function useAudioSourceSync(opts: AudioSourceSyncOptions): void {
 // ────────────────────────────────────────────────────────────────────────
 // queue actions
 
-type QueueActions = Pick<PlayerActions, 'playSong' | 'queueSong' | 'insertNext' | 'removeFromQueue'>
+type QueueActions = Pick<
+  PlayerActions,
+  'playSong' | 'queueSong' | 'insertNext' | 'removeFromQueue' | 'moveInQueue' | 'clearQueue'
+>
 
 function useQueueActions(setState: SetState): QueueActions {
   const playSong = useCallback(
@@ -194,7 +199,16 @@ function useQueueActions(setState: SetState): QueueActions {
     },
     [setState],
   )
-  return { playSong, queueSong, insertNext, removeFromQueue }
+  const moveInQueue = useCallback(
+    (fromId: string, toId: string) => {
+      setState((s) => moveQueueItem(s, fromId, toId))
+    },
+    [setState],
+  )
+  const clearQueue = useCallback(() => {
+    setState((s) => clearQueueKeepCurrent(s))
+  }, [setState])
+  return { playSong, queueSong, insertNext, removeFromQueue, moveInQueue, clearQueue }
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -354,6 +368,30 @@ function removeQueueItem(s: PlayerState, id: string): PlayerState {
     newIdx = newQueue.length > 0 ? Math.min(newIdx, newQueue.length - 1) : -1
   }
   return { ...s, queue: newQueue, currentIndex: newIdx }
+}
+
+// 拖拽重排: 把 fromId 拖到 toId 的位置. 维持 currentIndex 指向同一首歌
+function moveQueueItem(s: PlayerState, fromId: string, toId: string): PlayerState {
+  if (fromId === toId) return s
+  const fromIdx = s.queue.findIndex((q) => q.id === fromId)
+  const toIdx = s.queue.findIndex((q) => q.id === toId)
+  if (fromIdx < 0 || toIdx < 0) return s
+  const playingId = s.currentIndex >= 0 ? (s.queue[s.currentIndex]?.id ?? null) : null
+  const reordered = [...s.queue]
+  const [moved] = reordered.splice(fromIdx, 1)
+  if (moved === undefined) return s
+  reordered.splice(toIdx, 0, moved)
+  // 用歌 id 重新定位 currentIndex (而不是算偏移 — 边界 case 多易错)
+  const newCurrent = playingId !== null ? reordered.findIndex((q) => q.id === playingId) : -1
+  return { ...s, queue: reordered, currentIndex: newCurrent }
+}
+
+// 清空: 当前播放的留下 (停下一首), 没在播就全清
+function clearQueueKeepCurrent(s: PlayerState): PlayerState {
+  if (s.currentIndex < 0) return { ...s, queue: [] }
+  const playing = s.queue[s.currentIndex]
+  if (playing === undefined) return { ...s, queue: [], currentIndex: -1 }
+  return { ...s, queue: [playing], currentIndex: 0 }
 }
 
 function stepNext(s: PlayerState): PlayerState {
