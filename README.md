@@ -15,7 +15,7 @@ pnpm install
 pnpm dev          # turbo 并行起 PWA (:3000) + server (:8787)
 ```
 
-Windows 用户也可以直接双击根目录 `启动.bat`。
+Windows 用户也可以直接双击根目录 `claudio.bat`。
 
 打开 [http://localhost:3000](http://localhost:3000) 就能用。
 
@@ -25,7 +25,7 @@ Windows 用户也可以直接双击根目录 `启动.bat`。
 
 人工配也行, 三个必选项:
 
-1. **LLM 大脑**: 改 `启动.bat` 顶部 `set BRAIN=...` (deepseek / ollama / openai / claude), 详见 [brain/README](./packages/infrastructure/src/brain/README.md)
+1. **LLM 大脑**: 改 `claudio.bat` 顶部 `set BRAIN=...` (deepseek / ollama / openai / claude), 详见 [brain/README](./packages/infrastructure/src/brain/README.md)
 2. **TTS 声音**: `set TTS=...` (mock / gpt-sovits / voxcpm), 详见 [tts/README](./packages/infrastructure/src/tts/README.md)
 3. **网易云账号** (可选): PWA 设置面板里扫码登录
 

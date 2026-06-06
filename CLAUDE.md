@@ -8,7 +8,7 @@
 
 ## 一启动就跑得起来 — Mock 默认
 
-**没配任何 env**, 双击根目录 `启动.bat` (或 `pnpm dev`) 就能跑:
+**没配任何 env**, 双击根目录 `claudio.bat` (或 `pnpm dev`) 就能跑:
 
 - Brain 默认 `openai-compat` — fork 者只要 `OPENAI_API_KEY` 在 env 里就能跑 OpenAI 官方; 想换 DeepSeek/Ollama/Claude CLI 见"必选 1"
 - TTS 默认 `mock` — 返回静音 wav, 听不到 DJ 声音但 UI 完整, 能正常挑歌 / 看队列
@@ -86,7 +86,7 @@ packages/
   shared/         Config (env), WS protocol schema, errors
 tools/
   blender/      场景图原料 (.blend)
-启动.bat        Windows 双击启动 (pnpm dev 包装)
+claudio.bat        Windows 双击启动 (pnpm dev 包装)
 ```
 
 **Clean Architecture 单向依赖**: `apps → infrastructure → application → domain`. 加新 adapter 在 `infrastructure/<port>/<name>/`, 不要在 `apps` 直接 new 具体类.

@@ -4,7 +4,7 @@
 import { z } from 'zod'
 
 // 自动探测: env 里只有 DEEPSEEK_API_KEY 但 BRAIN_TYPE / OPENAI_* 都没**实质**给时,
-// 推断主人想走 deepseek. 让 fork 者不必必须走 启动.bat 也能跑 — 直接 export
+// 推断主人想走 deepseek. 让 fork 者不必必须走 claudio.bat 也能跑 — 直接 export
 // DEEPSEEK_API_KEY 然后 pnpm dev 即可
 //
 // "实质" 的关键: 空字符串 / 仅空白 也当 "没给". 主人 shell 经常会有
