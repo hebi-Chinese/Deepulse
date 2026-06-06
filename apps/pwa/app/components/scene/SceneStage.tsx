@@ -57,6 +57,8 @@ type Props = {
   readonly onOpenCmdk: () => void
   readonly queueLen?: number
   readonly weather: Weather
+  // 当前歌词行 — DJ 不在说话时, mic 旁字幕显这条
+  readonly currentLrcText?: string
 }
 
 export function SceneStage(props: Props) {
@@ -68,16 +70,35 @@ export function SceneStage(props: Props) {
     lang: props.language.lang,
   })
   const [chatOpen, setChatOpen] = useState(false)
-  // useListenWeatherAdjuster 已提到 Player.tsx 顶层 — Browse 时也能激活,
-  // 用户进 Listen 后看到 canvas 已是新坐标
   return (
     <>
       <SceneBackdrop weather={props.weather} />
       <SceneVinyl song={props.song} playing={props.playing} />
       <img className="scene-mic" src="/scene/mic.png" alt="" aria-hidden="true" />
-      <SceneDjSubtitle text={djMsg?.text ?? null} djLabel="DJ · 流萤" />
+      <SceneDjSubtitle
+        djText={djMsg?.text ?? null}
+        lrcText={props.currentLrcText ?? null}
+        djLabel="DJ · 流萤"
+      />
       <SceneVizBars audioRef={props.audioRef} playing={props.playing} />
       <SceneFx />
+      <SceneChrome props={props} chatOpen={chatOpen} setChatOpen={setChatOpen} />
+    </>
+  )
+}
+
+// 顶栏 / transport / 退出 / 音量 / DJ 按钮 + chat — 都是 chrome, 拆出来让 SceneStage 主体短
+function SceneChrome({
+  props,
+  chatOpen,
+  setChatOpen,
+}: {
+  readonly props: Props
+  readonly chatOpen: boolean
+  readonly setChatOpen: React.Dispatch<React.SetStateAction<boolean>>
+}) {
+  return (
+    <>
       <SceneTopBar
         onOpenSettings={props.onOpenSettings}
         onOpenCmdk={props.onOpenCmdk}
@@ -580,21 +601,40 @@ function SceneFx() {
   )
 }
 
-// ─── DJ 字幕 (右中,跟 mic 底沿对齐) ───────────────────────────────────────
+// ─── mic 旁字幕 (右中,跟 mic 底沿对齐) ───────────────────────────────────
+// 优先级: DJ 说话 > 当前歌词 > 啥都不显
+// label 也跟着切: DJ 在 → "DJ · 流萤"; 只剩歌词 → "♪ 歌词"
+
+type SubtitleLine = { readonly kind: 'dj' | 'lrc'; readonly label: string; readonly text: string }
+
+function pickSubtitleLine(
+  djText: string | null,
+  lrcText: string | null,
+  djLabel: string,
+): SubtitleLine | null {
+  const dj = djText?.trim() ?? ''
+  if (dj.length > 0) return { kind: 'dj', label: djLabel, text: `“${dj}”` }
+  const lrc = lrcText?.trim() ?? ''
+  if (lrc.length > 0) return { kind: 'lrc', label: '♪ 歌词', text: lrc }
+  return null
+}
 
 function SceneDjSubtitle({
-  text,
+  djText,
+  lrcText,
   djLabel,
 }: {
-  readonly text: string | null
+  readonly djText: string | null
+  readonly lrcText: string | null
   readonly djLabel: string
 }) {
-  if (text === null) return null
+  const line = pickSubtitleLine(djText, lrcText, djLabel)
+  if (line === null) return null
   return (
     <div className="scene-dj-text" aria-live="polite" role="status">
-      <div className="scene-dj-label">{djLabel}</div>
-      <div className="scene-dj-line" key={text}>
-        “{text}”
+      <div className="scene-dj-label">{line.label}</div>
+      <div className="scene-dj-line" key={`${line.kind}:${line.text}`}>
+        {line.text}
       </div>
     </div>
   )

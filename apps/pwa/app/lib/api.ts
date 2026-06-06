@@ -70,7 +70,11 @@ const playHistoryRowSchema = z.object({
 const playHistoryRespSchema = z.object({ plays: z.array(playHistoryRowSchema) })
 export type ApiPlayHistoryRow = z.infer<typeof playHistoryRowSchema>
 
-const djSubtitleRespSchema = z.object({ text: z.string().nullable() })
+// audioUrl 可空: tts 失败时 server 返 null, 前端 fallback 到只显文本
+const djSubtitleRespSchema = z.object({
+  text: z.string().nullable(),
+  audioUrl: z.string().nullable(),
+})
 
 export type ApiArtist = z.infer<typeof apiArtistSchema>
 export type ApiAlbum = z.infer<typeof apiAlbumSchema>

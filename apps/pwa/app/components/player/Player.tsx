@@ -96,6 +96,7 @@ function ListenStageView({ p }: { readonly p: ShellProps }) {
         language={p.language}
         queueLen={p.logic.state.queue.length}
         weather={p.weather}
+        {...lrcTextProp(p)}
         volume={p.logic.state.volume}
         muted={p.logic.state.muted}
         onSetVolume={p.logic.actions.setVolume}
@@ -119,6 +120,13 @@ function ListenStageView({ p }: { readonly p: ShellProps }) {
       <Overlays p={p} />
     </>
   )
+}
+
+// 当前歌词行 → optional prop (exactOptionalPropertyTypes 不接受 undefined 显式赋值,
+// 必须 spread 才能省 key)
+function lrcTextProp(p: ShellProps): { currentLrcText?: string } {
+  const text = p.logic.state.lrcLines[p.logic.activeLrcIndex]?.text
+  return text !== undefined ? { currentLrcText: text } : {}
 }
 
 // browse 模式 — 正面电台场景 (search-bg.png) + 天气粒子 + PlayerShell (顶栏/搜索/设置)
