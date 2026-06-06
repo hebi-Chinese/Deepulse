@@ -1,13 +1,16 @@
 'use client'
 
-// useDjState · DJ 文案生成 + 气泡云显示节奏
-// 切歌时(currentSong.id 变化)生成一段「过场词」,5s 后自动 fade-out
-// 文案模板: 上一首是 X → 现在这首 → 引入说明 (作品年份/风格)
-// v1 用本地模板;M3 接 LLM
+// useDjState · DJ 切歌字幕 — 走 brain (跟 chat 同套大脑, 主人提的"DJ 是字幕贡献者")
+//
+// 流程:
+//   1. currentSong.id 变化触发 fetch /api/dj/subtitle
+//   2. brain 失败 / 返 null → fallback 到本地模板 (UI 不能空)
+//   3. 文案落定后显示 CLOUD_HOLD_MS, 然后 fade-out CLOUD_FADE_MS
 
 import { useEffect, useRef, useState } from 'react'
 
-import type { ApiSong } from '../../lib/api'
+import { api, type ApiSong } from '../../lib/api'
+
 import type { Language } from '../../lib/i18n'
 
 const CLOUD_HOLD_MS = 5400
@@ -26,44 +29,93 @@ type Props = {
   readonly lang: Language
 }
 
-export function useDjCloud({
-  currentSong,
-  previousSong,
-  userInitiated,
-  enabled,
-  lang,
-}: Props): DjMessage | null {
+export function useDjCloud(props: Props): DjMessage | null {
   const [msg, setMsg] = useState<DjMessage | null>(null)
   const [fading, setFading] = useState(false)
   const lastId = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!enabled || currentSong === undefined) {
+    if (!props.enabled || props.currentSong === undefined) {
       setMsg(null)
       return
     }
-    if (lastId.current === currentSong.id) return
-    lastId.current = currentSong.id
-    const text = composeIntro({ currentSong, previousSong, userInitiated, lang })
-    const id = `${currentSong.id}-${String(Date.now())}`
-    setMsg({ text, id })
+    if (lastId.current === props.currentSong.id) return
+    lastId.current = props.currentSong.id
+    const { dispose } = startSubtitleFlow(props, setMsg, setFading)
+    return dispose
+  }, [props.currentSong, props.previousSong, props.userInitiated, props.enabled, props.lang, props])
+
+  if (msg === null) return null
+  return fading ? { ...msg, id: `${msg.id}-fading` } : msg
+}
+
+function startSubtitleFlow(
+  props: Props,
+  setMsg: (m: DjMessage | null) => void,
+  setFading: (b: boolean) => void,
+): { readonly dispose: () => void } {
+  const song = props.currentSong
+  if (song === undefined) return { dispose: () => undefined }
+  let cancelled = false
+  let t1 = 0
+  let t2 = 0
+  const showText = (text: string): void => {
+    if (cancelled) return
+    setMsg({ text, id: `${song.id}-${String(Date.now())}` })
     setFading(false)
-    const t1 = window.setTimeout(() => {
-      setFading(true)
+    t1 = window.setTimeout(() => {
+      if (!cancelled) setFading(true)
     }, CLOUD_HOLD_MS)
-    const t2 = window.setTimeout(() => {
+    t2 = window.setTimeout(() => {
+      if (cancelled) return
       setMsg(null)
       setFading(false)
     }, CLOUD_HOLD_MS + CLOUD_FADE_MS)
-    return () => {
+  }
+  void fetchSubtitle(props)
+    .then((text) => {
+      showText(text ?? localFallback(props))
+    })
+    .catch(() => {
+      showText(localFallback(props))
+    })
+  return {
+    dispose: () => {
+      cancelled = true
       window.clearTimeout(t1)
       window.clearTimeout(t2)
-    }
-  }, [currentSong, previousSong, userInitiated, enabled, lang])
+    },
+  }
+}
 
-  // 把 fading 状态贴回 msg 以便组件使用 data-fading
-  if (msg === null) return null
-  return fading ? { ...msg, id: `${msg.id}-fading` } : msg
+async function fetchSubtitle(props: Props): Promise<string | null> {
+  const cur = props.currentSong
+  if (cur === undefined) return null
+  const body = {
+    currentSong: { title: cur.title, artist: cur.artists.map((a) => a.name).join(' / ') },
+    userInitiated: props.userInitiated,
+    ...(props.previousSong !== undefined
+      ? {
+          previousSong: {
+            title: props.previousSong.title,
+            artist: props.previousSong.artists.map((a) => a.name).join(' / '),
+          },
+        }
+      : {}),
+  }
+  const r = await api.djSubtitle(body)
+  return r.text
+}
+
+// brain 失败时退回旧的本地模板抽签 — UI 不能因为后端挂就空
+function localFallback(opts: Props): string {
+  if (opts.currentSong === undefined) return ''
+  return composeIntro({
+    currentSong: opts.currentSong,
+    previousSong: opts.previousSong,
+    userInitiated: opts.userInitiated,
+    lang: opts.lang,
+  })
 }
 
 // ────────────────────────────────────────────────────────────────────────

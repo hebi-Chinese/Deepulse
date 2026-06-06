@@ -70,6 +70,8 @@ const playHistoryRowSchema = z.object({
 const playHistoryRespSchema = z.object({ plays: z.array(playHistoryRowSchema) })
 export type ApiPlayHistoryRow = z.infer<typeof playHistoryRowSchema>
 
+const djSubtitleRespSchema = z.object({ text: z.string().nullable() })
+
 export type ApiArtist = z.infer<typeof apiArtistSchema>
 export type ApiAlbum = z.infer<typeof apiAlbumSchema>
 type ApiSongBase = z.infer<typeof apiSongSchema>
@@ -165,4 +167,10 @@ export const api = {
       `/api/plays/recent${limit !== undefined ? `?limit=${String(limit)}` : ''}`,
       playHistoryRespSchema,
     ),
+
+  djSubtitle: (body: {
+    currentSong: { title: string; artist: string }
+    previousSong?: { title: string; artist: string }
+    userInitiated: boolean
+  }) => post('/api/dj/subtitle', djSubtitleRespSchema, body),
 }

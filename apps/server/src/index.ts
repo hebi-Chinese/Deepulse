@@ -8,6 +8,7 @@ import Fastify from 'fastify'
 import { ZodError } from 'zod'
 
 import { createDiscoverPlugin } from './api/discover.js'
+import { createDjSubtitlePlugin } from './api/dj-subtitle.js'
 import { createDjWsPlugin } from './api/dj-ws.js'
 import { createFeedbackPlugin } from './api/feedback.js'
 import { createLoginPlugin } from './api/login.js'
@@ -91,6 +92,7 @@ async function main(): Promise<void> {
   await app.register(createSnapshotPlugin(container))
   await app.register(createPlaylistPlugin(container))
   await app.register(createPlaysPlugin(container))
+  await app.register(createDjSubtitlePlugin(container))
   await app.register(createDjWsPlugin(container))
 
   installShutdown(app, container, logger)

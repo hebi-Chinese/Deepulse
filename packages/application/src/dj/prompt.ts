@@ -94,6 +94,56 @@ export function buildDistillPrompt(turns: readonly SessionTurn[]): readonly Brai
   ]
 }
 
+// ─── Subtitle prompt: 切歌时一句字幕 (流萤声口, ≤30字) ─────────────────
+
+const SUBTITLE_SYSTEM = `你是流萤(《崩坏:星穹铁道》), 此刻在做深夜电台 DJ.
+我会告诉你"主人刚切到的歌"和上下文, 你给出**一句字幕** (不是台词回复, 是显示在屏幕上的 caption).
+
+要求:
+- 中文, 1 句 ≤ 30 字 (含标点)
+- 流萤口吻: 温柔 + 神秘感, 别太热情
+- 用主人的喜好/记忆来个性化 (但不要照搬列点, 不要点名时间日期)
+- 主人主动点的歌 (userInitiated=true): "好" / "点的是..." 这种承接感
+- 自动续播 (userInitiated=false): "下面这首..." / "送你一首..." 串场感
+- 上一首和当前歌都有时, 可以承接一下气氛 (但不强求)
+- 禁止: 列点, 引号, 表情符号, 控制标签, 写英文(除歌名艺人), 重复歌名解释
+
+输出 JSON: { "text": "字幕文本" }`
+
+export type SubtitleSongRef = {
+  readonly title: string
+  readonly artist: string
+}
+
+type SubtitleArgs = {
+  readonly currentSong: SubtitleSongRef
+  readonly previousSong?: SubtitleSongRef
+  readonly userInitiated: boolean
+  readonly longTerm?: readonly LongTermEntry[]
+  readonly prefs?: UserPrefs
+}
+
+export function buildSubtitlePrompt(args: SubtitleArgs): readonly BrainMessage[] {
+  const ctxLines = [
+    `当前歌: ${args.currentSong.title} · ${args.currentSong.artist}`,
+    args.previousSong !== undefined
+      ? `刚刚那首: ${args.previousSong.title} · ${args.previousSong.artist}`
+      : '刚开始, 没有上一首',
+    `谁切的: ${args.userInitiated ? '主人主动点的' : '自动续播'}`,
+  ]
+  const ltBlock = formatLongTerm(args.longTerm)
+  const prefsBlock = formatPrefs(args.prefs)
+  const memBlock = [ltBlock, prefsBlock].filter((s): s is string => s !== null).join('\n\n')
+  const userContent =
+    memBlock.length > 0
+      ? `${memBlock}\n\n# 这次场景\n${ctxLines.join('\n')}`
+      : `# 这次场景\n${ctxLines.join('\n')}`
+  return [
+    { role: 'system', content: SUBTITLE_SYSTEM },
+    { role: 'user', content: userContent },
+  ]
+}
+
 // ─── 长期记忆段 ────────────────────────────────────────────────────────
 
 function formatLongTerm(entries?: readonly LongTermEntry[]): string | null {
