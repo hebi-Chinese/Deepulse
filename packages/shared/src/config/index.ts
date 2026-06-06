@@ -3,6 +3,23 @@
 
 import { z } from 'zod'
 
+// 自动探测: env 里只有 DEEPSEEK_API_KEY 但 BRAIN_TYPE / OPENAI_* 都没显式给时,
+// 推断主人想走 deepseek. 这让 fork 者不必必须用 启动.bat 也能跑 — 直接 export
+// DEEPSEEK_API_KEY 然后 pnpm dev 即可
+// 主人显式 set 任何一项 → 不动 (尊重)
+function autoInferDeepseek(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  if (source['DEEPSEEK_API_KEY'] === undefined) return source
+  if (source['BRAIN_TYPE'] !== undefined) return source
+  if (source['OPENAI_API_KEY'] !== undefined) return source
+  return {
+    ...source,
+    BRAIN_TYPE: 'deepseek',
+    OPENAI_API_KEY: source['DEEPSEEK_API_KEY'],
+    OPENAI_MODEL: source['OPENAI_MODEL'] ?? 'deepseek-chat',
+    OPENAI_BASE_URL: source['OPENAI_BASE_URL'] ?? 'https://api.deepseek.com/v1',
+  }
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
@@ -48,5 +65,5 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  return envSchema.parse(source)
+  return envSchema.parse(autoInferDeepseek(source))
 }

@@ -52,7 +52,14 @@ export class OpenAICompatBrain implements IBrain {
     messages: readonly BrainMessage[],
     options?: BrainGenerateOptions,
   ): AsyncIterable<string> {
-    const res = await this.post(messages, options, true)
+    // fetch 抛 TypeError("fetch failed") 时把 .cause 链拼进 message —
+    // 否则上层只看到 "fetch failed" 完全没法诊断 (是 DNS / TLS / proxy / connect refused?)
+    let res: Response
+    try {
+      res = await this.post(messages, options, true)
+    } catch (err: unknown) {
+      throw wrapFetchError(this.providerLabel, this.endpoint, err)
+    }
     if (!res.ok || res.body === null) {
       throw new ExternalServiceError(
         this.providerLabel,
@@ -67,7 +74,12 @@ export class OpenAICompatBrain implements IBrain {
     schema: z.ZodSchema<T>,
     options?: BrainGenerateOptions,
   ): Promise<T> {
-    const res = await this.post(messages, options, false, { type: 'json_object' })
+    let res: Response
+    try {
+      res = await this.post(messages, options, false, { type: 'json_object' })
+    } catch (err: unknown) {
+      throw wrapFetchError(this.providerLabel, this.endpoint, err)
+    }
     if (!res.ok) {
       throw new ExternalServiceError(
         this.providerLabel,
@@ -147,6 +159,19 @@ function mergeSignals(callerSignal: AbortSignal | undefined): AbortSignal {
     return AbortSignal.any([callerSignal, timeoutSignal])
   }
   return callerSignal
+}
+
+// fetch 失败时拼根因 — undici 抛 TypeError("fetch failed") + .cause (ConnectError / DNS / TLS etc)
+function wrapFetchError(provider: string, endpoint: string, err: unknown): ExternalServiceError {
+  const top = err instanceof Error ? err.message : String(err)
+  const cause = err instanceof Error && err.cause instanceof Error ? err.cause : undefined
+  const causeBits =
+    cause !== undefined
+      ? ` | cause: ${cause.name}: ${cause.message}${'code' in cause && typeof cause.code === 'string' ? ` (${cause.code})` : ''}`
+      : ''
+  return new ExternalServiceError(provider, `${top} → ${endpoint}${causeBits}`, undefined, {
+    cause: err,
+  })
 }
 
 async function safeText(res: Response): Promise<string> {
