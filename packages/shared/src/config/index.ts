@@ -3,21 +3,29 @@
 
 import { z } from 'zod'
 
-// 自动探测: env 里只有 DEEPSEEK_API_KEY 但 BRAIN_TYPE / OPENAI_* 都没显式给时,
-// 推断主人想走 deepseek. 这让 fork 者不必必须用 启动.bat 也能跑 — 直接 export
+// 自动探测: env 里只有 DEEPSEEK_API_KEY 但 BRAIN_TYPE / OPENAI_* 都没**实质**给时,
+// 推断主人想走 deepseek. 让 fork 者不必必须走 启动.bat 也能跑 — 直接 export
 // DEEPSEEK_API_KEY 然后 pnpm dev 即可
-// 主人显式 set 任何一项 → 不动 (尊重)
+//
+// "实质" 的关键: 空字符串 / 仅空白 也当 "没给". 主人 shell 经常会有
+// `export OPENAI_API_KEY=""` 这种残留, 不能让那种把 auto-detect 顶掉.
 function autoInferDeepseek(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  if (source['DEEPSEEK_API_KEY'] === undefined) return source
-  if (source['BRAIN_TYPE'] !== undefined) return source
-  if (source['OPENAI_API_KEY'] !== undefined) return source
+  if (isBlank(source['DEEPSEEK_API_KEY'])) return source
+  if (!isBlank(source['BRAIN_TYPE'])) return source
+  if (!isBlank(source['OPENAI_API_KEY'])) return source
   return {
     ...source,
     BRAIN_TYPE: 'deepseek',
     OPENAI_API_KEY: source['DEEPSEEK_API_KEY'],
-    OPENAI_MODEL: source['OPENAI_MODEL'] ?? 'deepseek-chat',
-    OPENAI_BASE_URL: source['OPENAI_BASE_URL'] ?? 'https://api.deepseek.com/v1',
+    OPENAI_MODEL: isBlank(source['OPENAI_MODEL']) ? 'deepseek-chat' : source['OPENAI_MODEL'],
+    OPENAI_BASE_URL: isBlank(source['OPENAI_BASE_URL'])
+      ? 'https://api.deepseek.com/v1'
+      : source['OPENAI_BASE_URL'],
   }
+}
+
+function isBlank(s: string | undefined): boolean {
+  return s === undefined || s.trim().length === 0
 }
 
 const envSchema = z.object({
