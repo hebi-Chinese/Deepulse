@@ -61,6 +61,15 @@ const qrCheckSchema = z.discriminatedUnion('state', [
 const loginStatusSchema = z.object({ loggedIn: z.boolean() })
 const okSchema = z.object({ ok: z.boolean() })
 
+const playHistoryRowSchema = z.object({
+  playedAtMs: z.number(),
+  finished: z.boolean(),
+  source: z.enum(['plan', 'fm', 'manual', 'recommendation', 'search']),
+  song: apiSongSchema,
+})
+const playHistoryRespSchema = z.object({ plays: z.array(playHistoryRowSchema) })
+export type ApiPlayHistoryRow = z.infer<typeof playHistoryRowSchema>
+
 export type ApiArtist = z.infer<typeof apiArtistSchema>
 export type ApiAlbum = z.infer<typeof apiAlbumSchema>
 type ApiSongBase = z.infer<typeof apiSongSchema>
@@ -150,4 +159,10 @@ export const api = {
 
   feedback: (songId: string, action: 'like' | 'unlike' | 'trash') =>
     post('/api/feedback', okSchema, { songId, action }),
+
+  recentPlays: (limit?: number) =>
+    get(
+      `/api/plays/recent${limit !== undefined ? `?limit=${String(limit)}` : ''}`,
+      playHistoryRespSchema,
+    ),
 }

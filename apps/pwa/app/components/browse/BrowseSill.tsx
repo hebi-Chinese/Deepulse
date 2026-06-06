@@ -11,6 +11,7 @@ import { api, type ApiSong } from '../../lib/api'
 import { ControlsBar } from '../player/ControlsBar'
 import { QueuePanel } from '../player/QueuePanel'
 
+import { HistoryPanel } from './HistoryPanel'
 import { PlaylistsSection } from './PlaylistsSection'
 
 import type { PlayerLogic } from '../player/usePlayerLogic'
@@ -32,44 +33,67 @@ export function BrowseSill({ logic, language, onPlay }: Props) {
       >
         <div className="max-w-5xl mx-auto h-full px-6 pointer-events-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 h-full">
-            <div className="space-y-5 overflow-y-auto pr-1">
-              <BrowseSearchBar
-                language={language}
-                onPlay={onPlay}
-                onInsertNext={logic.actions.insertNext}
-                onEnqueue={logic.actions.queueSong}
-              />
-              <NowPlayingTile logic={logic} language={language} />
-              <PlaylistsSection
-                language={language}
-                onPlay={onPlay}
-                onInsertNext={logic.actions.insertNext}
-                onEnqueue={logic.actions.queueSong}
-              />
-              <DailyRecommendations
-                onPlay={onPlay}
-                onInsertNext={logic.actions.insertNext}
-                onEnqueue={logic.actions.queueSong}
-                language={language}
-              />
-            </div>
-            <div className="overflow-y-auto">
-              <Card>
-                <QueuePanel
-                  queue={logic.state.queue}
-                  currentIndex={logic.state.currentIndex}
-                  onJump={onPlay}
-                  onRemove={logic.actions.removeFromQueue}
-                />
-              </Card>
-            </div>
+            <BrowseLeftColumn logic={logic} language={language} onPlay={onPlay} />
+            <BrowseRightColumn logic={logic} onPlay={onPlay} />
           </div>
         </div>
       </section>
-
       {/* Browse 底栏控制 (Listen 时由 ListenSill 自己提供半透浮控) */}
       <BottomBar logic={logic} />
     </>
+  )
+}
+
+function BrowseLeftColumn({ logic, language, onPlay }: Props) {
+  return (
+    <div className="space-y-5 overflow-y-auto pr-1">
+      <BrowseSearchBar
+        language={language}
+        onPlay={onPlay}
+        onInsertNext={logic.actions.insertNext}
+        onEnqueue={logic.actions.queueSong}
+      />
+      <NowPlayingTile logic={logic} language={language} />
+      <PlaylistsSection
+        language={language}
+        onPlay={onPlay}
+        onInsertNext={logic.actions.insertNext}
+        onEnqueue={logic.actions.queueSong}
+      />
+      <DailyRecommendations
+        onPlay={onPlay}
+        onInsertNext={logic.actions.insertNext}
+        onEnqueue={logic.actions.queueSong}
+        language={language}
+      />
+    </div>
+  )
+}
+
+function BrowseRightColumn({
+  logic,
+  onPlay,
+}: {
+  readonly logic: PlayerLogic
+  readonly onPlay: (s: ApiSong) => void
+}) {
+  return (
+    <div className="overflow-y-auto space-y-5">
+      <Card>
+        <QueuePanel
+          queue={logic.state.queue}
+          currentIndex={logic.state.currentIndex}
+          onJump={onPlay}
+          onRemove={logic.actions.removeFromQueue}
+        />
+      </Card>
+      <Card>
+        <HistoryPanel
+          onPlay={onPlay}
+          {...(logic.currentSong !== undefined ? { currentSongId: logic.currentSong.id } : {})}
+        />
+      </Card>
+    </div>
   )
 }
 
