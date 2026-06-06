@@ -94,6 +94,8 @@ export function buildContainer(env: Env): Container {
   return {
     env,
     brain: createBrain(env.BRAIN_TYPE, {
+      deepseekUrl: env.DEEPSEEK_URL,
+      ollamaUrl: env.OLLAMA_URL,
       openaiBaseUrl: env.OPENAI_BASE_URL,
       openaiApiKey: env.OPENAI_API_KEY,
       openaiModel: env.OPENAI_MODEL,

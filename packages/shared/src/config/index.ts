@@ -9,6 +9,9 @@ import { z } from 'zod'
 //
 // "实质" 的关键: 空字符串 / 仅空白 也当 "没给". 主人 shell 经常会有
 // `export OPENAI_API_KEY=""` 这种残留, 不能让那种把 auto-detect 顶掉.
+//
+// 注: URL 不再由 autoInfer 负责 — brain factory 各 case 直接读 DEEPSEEK_URL 等
+// 专属 env. 主人哲学: brand 专属 URL, 不预填 default.
 function autoInferDeepseek(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   if (isBlank(source['DEEPSEEK_API_KEY'])) return source
   if (!isBlank(source['BRAIN_TYPE'])) return source
@@ -18,9 +21,6 @@ function autoInferDeepseek(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     BRAIN_TYPE: 'deepseek',
     OPENAI_API_KEY: source['DEEPSEEK_API_KEY'],
     OPENAI_MODEL: isBlank(source['OPENAI_MODEL']) ? 'deepseek-chat' : source['OPENAI_MODEL'],
-    OPENAI_BASE_URL: isBlank(source['OPENAI_BASE_URL'])
-      ? 'https://api.deepseek.com/v1'
-      : source['OPENAI_BASE_URL'],
   }
 }
 
@@ -42,16 +42,21 @@ const envSchema = z.object({
   TTS_TYPE: z.enum(['mock', 'gpt-sovits', 'voxcpm']).default('mock'),
 
   // Brain（PRD §10 Q5）
-  // 默认 openai-compat — fork 者拿到 repo 后只要给 OPENAI_API_KEY + 改 BRAIN_TYPE 就能跑;
-  // 主人想用 claude CLI 走 BRAIN_TYPE=claude 显式打开 (避免没 set env 时静默回退到要 Pro 订阅的实现)
+  // 默认 openai-compat — fork 者拿到 repo 后改 BRAIN_TYPE + 配对应 *_URL + *_API_KEY 就能跑
+  // 主人想用 claude CLI 走 BRAIN_TYPE=claude 显式打开
   BRAIN_TYPE: z
     .enum(['claude', 'deepseek', 'ollama', 'openai-compat', 'custom'])
     .default('openai-compat'),
 
-  // OpenAI-Compatible Brain · BYO LLM (DeepSeek / Ollama / vLLM / LMStudio / OpenRouter / OpenAI 本身 ...)
-  // 任何说自己 "OpenAI-compatible" 的 /v1/chat/completions 服务都能用,
-  // BRAIN_TYPE=openai-compat | deepseek | ollama 都走这套实现, 区别只在默认 base_url
-  OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
+  // OpenAI-Compatible Brain · BYO LLM
+  // 主人哲学 (2026-06-07): 每 brand 一个专属 URL env, 不预填 default. factory 在 brain.ts
+  // 里各 case 检查对应字段, 没设就 startup throw — 不静默走错地方.
+  //   BRAIN_TYPE=deepseek      需 set DEEPSEEK_URL (e.g. https://api.deepseek.com/v1)
+  //   BRAIN_TYPE=ollama        需 set OLLAMA_URL (e.g. http://localhost:11434/v1)
+  //   BRAIN_TYPE=openai-compat 需 set OPENAI_BASE_URL (官方 / 自部署 / 任何 OpenAI-compatible)
+  DEEPSEEK_URL: z.string().url().optional(),
+  OLLAMA_URL: z.string().url().optional(),
+  OPENAI_BASE_URL: z.string().url().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
 

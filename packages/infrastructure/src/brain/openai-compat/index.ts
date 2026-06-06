@@ -18,7 +18,12 @@ import { z } from 'zod'
 import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/application'
 
 export type OpenAICompatConfig = {
-  readonly baseUrl: string
+  /**
+   * 解析 base URL 的函数 — 每次 fetch 调一次, 没必要静态字符串
+   * 主人哲学: URL 一层, brand 专属, factory 各 case 自己决定函数体. 没有 "default URL"
+   * 兜底 — resolver 自己根据 BRAIN_TYPE 该 throw 就 throw, 让 startup 立刻看到根因
+   */
+  readonly resolveEndpoint: () => string
   readonly apiKey: string | undefined
   readonly model: string
   readonly providerLabel?: string
@@ -40,12 +45,15 @@ const jsonRespSchema = z.object({
 })
 
 export class OpenAICompatBrain implements IBrain {
-  private readonly endpoint: string
   private readonly providerLabel: string
 
   constructor(private readonly cfg: OpenAICompatConfig) {
-    this.endpoint = `${cfg.baseUrl.replace(/\/$/, '')}/chat/completions`
     this.providerLabel = cfg.providerLabel ?? 'openai-compat'
+  }
+
+  /** 每次 fetch 重新 resolve — 主人哲学: brand 专属 URL, no caching */
+  private endpoint(): string {
+    return `${this.cfg.resolveEndpoint().replace(/\/$/, '')}/chat/completions`
   }
 
   async *stream(
@@ -58,7 +66,7 @@ export class OpenAICompatBrain implements IBrain {
     try {
       res = await this.post(messages, options, true)
     } catch (err: unknown) {
-      throw wrapFetchError(this.providerLabel, this.endpoint, err)
+      throw wrapFetchError(this.providerLabel, this.endpoint(), err)
     }
     if (!res.ok || res.body === null) {
       throw new ExternalServiceError(
@@ -78,7 +86,7 @@ export class OpenAICompatBrain implements IBrain {
     try {
       res = await this.post(messages, options, false, { type: 'json_object' })
     } catch (err: unknown) {
-      throw wrapFetchError(this.providerLabel, this.endpoint, err)
+      throw wrapFetchError(this.providerLabel, this.endpoint(), err)
     }
     if (!res.ok) {
       throw new ExternalServiceError(
@@ -141,7 +149,7 @@ export class OpenAICompatBrain implements IBrain {
     }
     /* eslint-enable @typescript-eslint/naming-convention */
 
-    return await fetch(this.endpoint, {
+    return await fetch(this.endpoint(), {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
