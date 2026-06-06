@@ -164,8 +164,8 @@ function Pill({
 
 function weatherLabel(w: Weather, lang: Language): string {
   const map: Record<Language, Record<Weather, string>> = {
-    zh: { clear: '晴', rain: '雨', snow: '雪', fog: '雾' },
-    en: { clear: 'Clear', rain: 'Rain', snow: 'Snow', fog: 'Fog' },
+    zh: { clear: '晴', rain: '雨', snow: '雪' },
+    en: { clear: 'Clear', rain: 'Rain', snow: 'Snow' },
   }
   return map[lang][w]
 }

@@ -115,7 +115,7 @@ function SceneBackdrop({ weather }: { readonly weather: Weather }) {
   return (
     <>
       <div className="scene-bg" />
-      <SceneWindow weather={weather} />
+      <SceneWindow />
       {showCanvas ? <AtmosphereCanvas weather={weather} className="scene-weather-canvas" /> : null}
       <div className="scene-foreground" aria-hidden="true" />
       <div className="scene-moon-beam" aria-hidden="true" />

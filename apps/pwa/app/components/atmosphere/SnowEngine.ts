@@ -42,8 +42,9 @@ export function createSnowEngine(): AtmosphereEngine {
       }
     },
     draw(ctx) {
+      // 主人 2026-06-06: 雪色跟雨同款冷蓝灰, 不要纯白发光, 夜色场景才协调
       for (const f of flakes) {
-        ctx.fillStyle = `rgba(255,255,255,${String(f.alpha)})`
+        ctx.fillStyle = `rgba(220,235,255,${String(f.alpha)})`
         ctx.beginPath()
         ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
         ctx.fill()
@@ -66,7 +67,8 @@ function rebuild(flakes: Flake[], vp: Viewport): void {
       vy: 30 + Math.random() * 60,
       swayPhase: Math.random() * Math.PI * 2,
       swayAmp: 10 + Math.random() * 20,
-      alpha: 0.6 + Math.random() * 0.4,
+      // alpha 范围跟雨 LAYER_ALPHAS (0.16/0.28/0.45) 对齐 — 夜色场景才不抢眼
+      alpha: 0.18 + Math.random() * 0.27,
     })
   }
 }

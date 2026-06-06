@@ -63,9 +63,6 @@ function createEngine(weather: Weather): AtmosphereEngine {
       return createSnowEngine()
     case 'clear':
       return createClearEngine()
-    case 'fog':
-      // v1 未实现,先用 clear 占位
-      return createClearEngine()
     default: {
       const exhaustive: never = weather
       throw new Error(`unknown weather: ${exhaustive as string}`)

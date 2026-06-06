@@ -1,10 +1,8 @@
 'use client'
 
-// SceneWindow · 窗户内部覆盖层 — 只渲染**装饰**(风铃 + 雾 overlay)
-// 雨/雪/玻璃水滴 由 AtmosphereCanvas (RainEngine/SnowEngine) 真粒子接管, 在 SceneStage 渲染
-// 纯装饰, aria-hidden, 不接收交互
-
-import type { Weather } from '../atmosphere/types'
+// SceneWindow · 窗户内部覆盖层 — 纯装饰风铃 SVG
+// 雨/雪 走 AtmosphereCanvas (RainEngine/SnowEngine) 真粒子, 在 SceneStage 渲染
+// aria-hidden, 不接收交互
 
 const CHIMES = [
   { variant: 'c1' as const, size: { w: 40, h: 120 } },
@@ -12,13 +10,12 @@ const CHIMES = [
   { variant: 'c3' as const, size: { w: 28, h: 80 } },
 ]
 
-export function SceneWindow({ weather }: { readonly weather: Weather }) {
+export function SceneWindow() {
   return (
     <div className="scene-window" aria-hidden="true">
       {CHIMES.map((c) => (
         <Chime key={c.variant} variant={c.variant} w={c.size.w} h={c.size.h} />
       ))}
-      {weather === 'fog' ? <div className="scene-window-fog" /> : null}
     </div>
   )
 }

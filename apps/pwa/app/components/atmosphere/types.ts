@@ -1,14 +1,13 @@
 // Atmosphere 共享类型 + 引擎契约
 // 新增天气 = 实现 AtmosphereEngine + 注册到 manager,不动主组件
 
-export const WEATHERS = ['clear', 'rain', 'snow', 'fog'] as const
+export const WEATHERS = ['clear', 'rain', 'snow'] as const
 export type Weather = (typeof WEATHERS)[number]
 
 export const WEATHER_LABEL: Record<Weather, string> = {
   clear: '晴',
   rain: '雨',
   snow: '雪',
-  fog: '雾',
 }
 
 export type Viewport = {
