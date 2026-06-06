@@ -29,9 +29,9 @@ type LogLike = {
   readonly error: (o: unknown, m?: string) => void
 }
 
-// brain 配置全量 log — 排查 "fetch failed" 时一眼看到 base URL 是不是被歪了
+// 启动配置全量 log — 排查 "fetch failed" / "没声音" 时一眼看到选了啥实现
 // (key 只打前 8 位防泄漏)
-function logBrainConfig(env: ReturnType<typeof loadEnv>, log: LogLike): void {
+function logStartupConfig(env: ReturnType<typeof loadEnv>, log: LogLike): void {
   log.info(
     {
       brainType: env.BRAIN_TYPE,
@@ -40,7 +40,12 @@ function logBrainConfig(env: ReturnType<typeof loadEnv>, log: LogLike): void {
       openaiBaseUrl: env.OPENAI_BASE_URL ?? '(none)',
       openaiModel: env.OPENAI_MODEL,
       openaiKeyPrefix: env.OPENAI_API_KEY?.slice(0, 8) ?? '(none)',
+      ttsType: env.TTS_TYPE,
+      ttsUrl: env.TTS_URL,
+      voxcpmUrl: env.VOXCPM_URL ?? '(none)',
+      voxcpmVoiceDesign: env.VOXCPM_VOICE_DESIGN,
       dbUrl: env.DATABASE_URL,
+      redisUrl: env.REDIS_URL ?? '(none, in-memory fallback)',
     },
     'container ready',
   )
@@ -70,7 +75,7 @@ async function main(): Promise<void> {
   })
 
   const container = buildContainer(env)
-  logBrainConfig(env, logger)
+  logStartupConfig(env, logger)
 
   await runColdStart(container, logger)
 
