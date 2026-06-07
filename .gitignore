@@ -58,3 +58,6 @@ tools/blender-mcp-main/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# personal scratch / 设计草图等不进 git
+photos/
