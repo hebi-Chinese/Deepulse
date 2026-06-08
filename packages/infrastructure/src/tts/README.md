@@ -7,7 +7,7 @@
 | Type 枚举    | 适配器                          | 用途                                                                |
 | ------------ | ------------------------------- | ------------------------------------------------------------------- |
 | `mock`       | `mock/MockTtsClient`            | **默认**, 返回 1 秒静音 wav (data URI), fork 者跑全链路不报错       |
-| `gpt-sovits` | `gpt-sovits/GptSovitsTtsClient` | 主人本地: HTTP POST GPT-SoVITS `:8000/infer_single`, 流萤声线模型   |
+| `gpt-sovits` | `gpt-sovits/GptSovitsTtsClient` | 用户本地: HTTP POST GPT-SoVITS `:8000/infer_single`, 流萤声线模型   |
 | `voxcpm`     | `voxcpm/VoxCpmTtsClient`        | OpenBMB VoxCPM2: HTTP POST `:8001/synthesize`, 30 语言 voice design |
 
 `voxcpm` 配套 Python wrapper 在 `tools/voxcpm-server/` (见那里的 README).

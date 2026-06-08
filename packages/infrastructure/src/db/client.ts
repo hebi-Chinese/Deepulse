@@ -25,7 +25,7 @@ const BUNDLED_MIGRATIONS_DIR = resolve(HERE, 'migrations')
 export function createDb(dbUrl: string): {
   db: ReturnType<typeof drizzle<typeof schema>>
   close: () => void
-  /** 用 infra 自带的 bundled migrations dir; 主人想自定义可显式传 */
+  /** 用 infra 自带的 bundled migrations dir; 用户想自定义可显式传 */
   applyMigrations: (migrationsFolder?: string) => void
 } {
   // 确保目录存在

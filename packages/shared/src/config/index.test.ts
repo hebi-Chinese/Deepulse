@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { loadEnv } from './index.js'
 
 // autoInferDeepseek 的边界 case: 空字符串/全空白/未定义都应当当作"没给", 让 auto-detect 接管.
-// 主人哲学 (2026-06-07): URL 一层, brand 专属 env var, autoInfer 只 set BRAIN_TYPE + API_KEY 映射,
+// 用户哲学 (2026-06-07): URL 一层, brand 专属 env var, autoInfer 只 set BRAIN_TYPE + API_KEY 映射,
 // URL 让 brain factory 各 case 检查对应 *_URL env 自己 throw.
 
 describe('loadEnv autoInferDeepseek', () => {

@@ -90,7 +90,7 @@ function useInitialStatusCheck(ctxRef: React.RefObject<PollCtx>): void {
       })
       .catch((err: unknown) => {
         // 网络挂 / server down / 5xx 都 fallback 到"未登录" — 退化合理 (登录态不可见胜过卡 UI)
-        // 但必须留痕, 主人 F12 才能区分"真没登录"还是"server 死了"
+        // 但必须留痕, 用户 F12 才能区分"真没登录"还是"server 死了"
         console.warn('[useNcmLogin] loginStatus check failed, assuming logged-out:', err)
       })
     return () => {

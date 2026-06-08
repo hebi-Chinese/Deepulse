@@ -1,13 +1,13 @@
 'use client'
 
-// ?adjust=vinyl 调试模式 — 主人手按方向键校准唱片在背景上的贴合位置.
+// ?adjust=vinyl 调试模式 — 用户手按方向键校准唱片在背景上的贴合位置.
 // 触发: URL 加 ?adjust=vinyl
 // 操作:
 //   方向键      移位      (Shift+方向键 = 大步 1%, 默认 0.2%)
 //   + / -       同比缩放
 //   [ / ]       只调长轴 (横向)
 //   , / .       只调短轴 (纵向)
-//   P           console.log + alert 当前 CSS, 主人粘贴回 .scene-vinyl-wrap
+//   P           console.log + alert 当前 CSS, 用户粘贴回 .scene-vinyl-wrap
 //
 // vars 用 useState 管 + 不可变更新 — 每次按键产生新对象, 不修改前一帧.
 

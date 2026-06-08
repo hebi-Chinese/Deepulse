@@ -20,7 +20,7 @@ import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/applic
 export type OpenAICompatConfig = {
   /**
    * 解析 base URL 的函数 — 每次 fetch 调一次, 没必要静态字符串
-   * 主人哲学: URL 一层, brand 专属, factory 各 case 自己决定函数体. 没有 "default URL"
+   * 用户哲学: URL 一层, brand 专属, factory 各 case 自己决定函数体. 没有 "default URL"
    * 兜底 — resolver 自己根据 BRAIN_TYPE 该 throw 就 throw, 让 startup 立刻看到根因
    */
   readonly resolveEndpoint: () => string
@@ -51,7 +51,7 @@ export class OpenAICompatBrain implements IBrain {
     this.providerLabel = cfg.providerLabel ?? 'openai-compat'
   }
 
-  /** 每次 fetch 重新 resolve — 主人哲学: brand 专属 URL, no caching */
+  /** 每次 fetch 重新 resolve — 用户哲学: brand 专属 URL, no caching */
   private endpoint(): string {
     return `${this.cfg.resolveEndpoint().replace(/\/$/, '')}/chat/completions`
   }

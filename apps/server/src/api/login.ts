@@ -9,7 +9,7 @@ import type { FastifyPluginAsync } from 'fastify'
 
 const checkQuery = z.object({
   unikey: z.string().min(1),
-  // 主人在登录前勾选 "记住我" 才会传 persist=1
+  // 用户在登录前勾选 "记住我" 才会传 persist=1
   // 不勾 → 只在当前 server 进程内存里有 cookie, 服务重启就丢, 不入 DB
   // 勾了 → cookie 同时存 DB, 重启后 cold-start 自动恢复
   persist: z.enum(['0', '1']).optional().default('0'),

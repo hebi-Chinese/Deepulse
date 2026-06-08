@@ -7,7 +7,7 @@
 //   3. 一并返回 {text, audioUrl}
 //
 // 容错: brain 文本必须有 (没字幕 UI 会空), tts 失败给 audioUrl=null 让前端静默 — 文本
-// 还能展示, 主人在 F12 见到 warn
+// 还能展示, 用户在 F12 见到 warn
 
 import { generateSubtitle } from '@claudio/application'
 import { z } from 'zod'
@@ -49,7 +49,7 @@ export function createDjSubtitlePlugin(container: Container): FastifyPluginAsync
         },
       )
 
-      // tts 失败不挡字幕 — 文本还能展示, 主人在 log 里看到原因
+      // tts 失败不挡字幕 — 文本还能展示, 用户在 log 里看到原因
       // brain 返 null 时跳过 tts (前端 fallback 本地模板, 没声音可接受)
       let audioUrl: string | null = null
       if (result.text !== null) {

@@ -5,7 +5,7 @@
 //   1 / 2 / 3 / 4   选角 TL / TR / BR / BL (再按一次同号取消)
 //   0               取消选角
 //   方向键          移位 (Shift = 大步 1%, 默认 0.2%) — 没选角整体平移 4 个角, 选了只动那个
-//   P               console.log + alert 当前 CSS, 主人定数后烧进 globals.css
+//   P               console.log + alert 当前 CSS, 用户定数后烧进 globals.css
 
 import { useEffect, useRef, useState } from 'react'
 
@@ -16,7 +16,7 @@ type BrowseVars = {
   selected: Corner | null
 }
 
-// 跟 globals.css .browse-weather-canvas 的 var fallback 一致 — 主人 ?adjust=browse 拉定
+// 跟 globals.css .browse-weather-canvas 的 var fallback 一致 — 用户 ?adjust=browse 拉定
 // 旧两段式 (left 21.4, top -0.6, w 52.5, h 52.6) 换算后的 4 个 viewport 角 (退化为矩形)
 const DEFAULT_VARS: BrowseVars = {
   corners: {

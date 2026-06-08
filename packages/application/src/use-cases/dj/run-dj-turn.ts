@@ -1,5 +1,5 @@
 // runDjTurn use case · DJ 一次对话回合的纯业务编排
-// 输入: 主人发的 user_msg + 上下文; 输出: AsyncIterable<DjTurnEvent>
+// 输入: 用户发的 user_msg + 上下文; 输出: AsyncIterable<DjTurnEvent>
 // 调用方 (WS 路由 / 未来 CLI / 单测) 只负责消费事件 + 转换成各自的输出格式
 //
 // 解耦点 (architect audit CRITICAL fix):
@@ -55,7 +55,7 @@ export type RunDjTurnDeps = {
   readonly tts: ITtsClient
   // shortTerm: 当前 session 的活跃对话 (Redis 热缓存); 替代旧的 conversations.recent
   readonly shortTerm: IShortTermMemoryRepo
-  // longTerm: 跨 session 的累积事实 (主人是谁/喜好/近况); session 结束时自动 distill
+  // longTerm: 跨 session 的累积事实 (用户是谁/喜好/近况); session 结束时自动 distill
   readonly longTerm: ILongTermMemoryRepo
   // 兼容保留: conversations 用于 sqlite 长期归档 (查询/分析用), 不进 prompt context
   readonly conversations: IConversationsRepo

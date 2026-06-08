@@ -2,17 +2,17 @@
 
 实现 `IBrain` 接口 (在 `@claudio/application/ports/brain`).
 
-## 设计哲学 (主人 2026-06-07): URL 一层, brand 专属, 0 预填
+## 设计哲学 (用户 2026-06-07): URL 一层, brand 专属, 0 预填
 
 每个 `BRAIN_TYPE` 读**自己专属的 URL env var**, 互不串味. 不预填任何 default URL — 没填 startup throw `BRAIN_TYPE=X 必须 set X_URL env`, 不静默走错地方.
 
-理由: shell 残留 (e.g. `export OPENAI_BASE_URL=""`) 不会跨 brand 串. 主人想用 deepseek 时不会因为环境里有别的 OPENAI\_\* 残留而误打到 openai.
+理由: shell 残留 (e.g. `export OPENAI_BASE_URL=""`) 不会跨 brand 串. 用户想用 deepseek 时不会因为环境里有别的 OPENAI\_\* 残留而误打到 openai.
 
 ## 已实现
 
 | Type            | 必须 set 的 env                                       | 用途                                |
 | --------------- | ----------------------------------------------------- | ----------------------------------- |
-| `claude`        | (无 URL)                                              | 主人本机 claude CLI                 |
+| `claude`        | (无 URL)                                              | 用户本机 claude CLI                 |
 | `deepseek`      | `DEEPSEEK_URL` + `OPENAI_API_KEY` + `OPENAI_MODEL`    | DeepSeek 官方 API                   |
 | `ollama`        | `OLLAMA_URL` + `OPENAI_MODEL`                         | 本地 Ollama (不验 key)              |
 | `openai-compat` | `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `OPENAI_MODEL` | 官方 / 自部署 / OpenRouter 都走这条 |
@@ -20,7 +20,7 @@
 
 ## BYO LLM — 4 种典型配置
 
-`claudio.bat` 顶部改 `set "BRAIN=..."` 即可, 下面是各 BRAIN 对应的完整 env. (其实 bat 里 BRAIN=deepseek/ollama/openai 这三种已经替主人 set 了 URL 跟 model 默认, 主人只需要给 key.)
+`claudio.bat` 顶部改 `set "BRAIN=..."` 即可, 下面是各 BRAIN 对应的完整 env. (其实 bat 里 BRAIN=deepseek/ollama/openai 这三种已经替用户 set 了 URL 跟 model 默认, 用户只需要给 key.)
 
 ### 1. DeepSeek (推荐: 便宜 + 中文好)
 

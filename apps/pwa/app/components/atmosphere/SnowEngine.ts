@@ -42,7 +42,7 @@ export function createSnowEngine(): AtmosphereEngine {
       }
     },
     draw(ctx) {
-      // 主人 2026-06-06: 雪色跟雨同款冷蓝灰, 不要纯白发光, 夜色场景才协调
+      // 用户 2026-06-06: 雪色跟雨同款冷蓝灰, 不要纯白发光, 夜色场景才协调
       for (const f of flakes) {
         ctx.fillStyle = `rgba(220,235,255,${String(f.alpha)})`
         ctx.beginPath()

@@ -53,9 +53,9 @@ export type IConversationsRepo = {
   append(entry: ConversationEntry): Promise<void>
 }
 
-// ── 主人手写的喜好 (markdown 长/短期, DJ 推歌前读) ──
-// 长期: 主人手写, 整段 markdown 返出
-// 短期: 主人手写, 每行 `YYYY-MM-DD: 描述`, 实现负责过滤 TTL
+// ── 用户手写的喜好 (markdown 长/短期, DJ 推歌前读) ──
+// 长期: 用户手写, 整段 markdown 返出
+// 短期: 用户手写, 每行 `YYYY-MM-DD: 描述`, 实现负责过滤 TTL
 // nowMs 由调用方注入, 让 repo 实现可单测时间相关分支
 export type UserPrefs = {
   readonly longTerm: string

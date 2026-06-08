@@ -1,4 +1,4 @@
-// refreshUserSnapshot use case · 主人手动触发拉新 NCM 快照
+// refreshUserSnapshot use case · 用户手动触发拉新 NCM 快照
 // 之前在 api/snapshot.ts:21-34 route 里直接编排 ncm.fetchUserSnapshot + snapshot.save
 // 现在提到 use case, route 只调一次
 

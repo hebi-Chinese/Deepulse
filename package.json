@@ -2,11 +2,11 @@
   "name": "claudio",
   "version": "0.1.0",
   "private": true,
-  "description": "个人 AI 电台 · Claude DJ 大脑 + 网易云音乐 + GPT-SoVITS 语音",
+  "description": "个人 AI 电台 · LLM DJ 大脑 + 网易云音乐 + VoxCPM/SoVITS 语音",
   "type": "module",
   "packageManager": "pnpm@11.3.0",
   "engines": {
-    "node": ">=20",
+    "node": ">=22.13",
     "pnpm": ">=11"
   },
   "scripts": {

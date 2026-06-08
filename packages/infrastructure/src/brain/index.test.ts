@@ -3,9 +3,9 @@ import { z } from 'zod'
 
 import { createBrain } from './index.js'
 
-// 主人哲学 (2026-06-07): URL 一层, brand 专属 env, 没填就 throw — 不静默走错地方
+// 用户哲学 (2026-06-07): URL 一层, brand 专属 env, 没填就 throw — 不静默走错地方
 // brain factory 构造时不 throw (lazy), 第一次 fetch 时 resolver throw, 错误信息直接告诉
-// 主人该 set 哪个 env
+// 用户该 set 哪个 env
 
 const baseCfg = {
   openaiApiKey: 'sk-test',

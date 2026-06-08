@@ -66,7 +66,7 @@ export function persist(fields: PersistFields): void {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   } catch (err: unknown) {
     // QuotaExceeded / 隐私模式禁写 — 写不进就算了 (持久化不是核心功能)
-    // 但留痕, 否则主人重启后队列没了完全摸不到原因
+    // 但留痕, 否则用户重启后队列没了完全摸不到原因
     console.warn('[playerStorage] persist failed (quota/private-mode?):', err)
   }
 }

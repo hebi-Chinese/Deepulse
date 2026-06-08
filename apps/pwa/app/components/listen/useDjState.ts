@@ -70,7 +70,7 @@ function startSubtitleFlow(
     })
     .catch((err: unknown) => {
       // brain 挂了字幕得能跑 — 但 silent fallback 让我们在生产里完全见不到 brain 失败
-      // 至少 console.warn 留痕, 主人 F12 能看到, 不影响 UI
+      // 至少 console.warn 留痕, 用户 F12 能看到, 不影响 UI
       console.warn('[DJ subtitle] fetch failed, using local template:', err)
       ctl.run({ text: localFallback(props), audioUrl: null })
     })

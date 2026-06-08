@@ -14,7 +14,7 @@
 //   真实电台 DJ 说话时音乐自动压低 (~25%), 说完慢慢升回. 这就是 ducking.
 //   音乐流过 musicGain → destination, DJ 说话时把 musicGain 滑到 DUCK_LEVEL,
 //   说完滑回 1.0. DJ TTS 不走 Web Audio (浏览器默认), 不受 musicGain 影响.
-//   主人定: 视觉 (analyser) 不跟 DJ 跳, 所以 analyser 接 source 旁路, 不进 destination.
+//   用户定: 视觉 (analyser) 不跟 DJ 跳, 所以 analyser 接 source 旁路, 不进 destination.
 
 let shared: AudioContext | null = null
 let resumed = false

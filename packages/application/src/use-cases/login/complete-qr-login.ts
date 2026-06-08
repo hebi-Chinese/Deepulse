@@ -1,6 +1,6 @@
-// completeQrLogin use case · 主人扫码成功后的收尾编排
+// completeQrLogin use case · 用户扫码成功后的收尾编排
 // - 把 cookie set 进 NCM client (内存, 必做)
-// - 如果 persist=true 才入 DB (主人 opt-in)
+// - 如果 persist=true 才入 DB (用户 opt-in)
 // - 后台拉一次 user snapshot 给推荐用 (失败不影响登录)
 // 失败语义: setCookie 永远不抛; saveCookie 失败 → 返 persistFailed=true (调用方决定是否暴露给前端);
 // snapshot 失败 → log warn, 不影响登录主流程
@@ -44,7 +44,7 @@ export async function completeQrLogin(
     }
   }
 
-  // 后台拉 snapshot, 不阻塞返回; 失败仅 warn (主人可手动 /api/snapshot/refresh 重试)
+  // 后台拉 snapshot, 不阻塞返回; 失败仅 warn (用户可手动 /api/snapshot/refresh 重试)
   void deps.ncm
     .fetchUserSnapshot()
     .then((snap) => deps.snapshot.save(snap))

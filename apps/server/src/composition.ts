@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { createBrain } from '@claudio/infrastructure/brain'
 import { createSystemClock } from '@claudio/infrastructure/clock'
 // 注: migration path 不再在这里写死, 默认 createDb 用 infra bundled migrations
-//    composition root 只在主人显式传 env.MIGRATIONS_DIR 时覆盖
+//    composition root 只在用户显式传 env.MIGRATIONS_DIR 时覆盖
 import {
   createConversationsRepo,
   createDb,
@@ -69,7 +69,7 @@ const LONG_TERM_PATH = resolve(currentDir, '..', 'data', 'dj-long-term.md')
 
 export function buildContainer(env: Env): Container {
   const dbClient = createDb(env.DATABASE_URL)
-  // 主人显式给了 MIGRATIONS_DIR 才覆盖, 否则用 createDb 自带的 bundled 路径
+  // 用户显式给了 MIGRATIONS_DIR 才覆盖, 否则用 createDb 自带的 bundled 路径
   dbClient.applyMigrations(env.MIGRATIONS_DIR)
 
   const accountRepo = createNcmAccountRepo(dbClient)

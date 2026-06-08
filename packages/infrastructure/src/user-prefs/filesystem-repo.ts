@@ -1,6 +1,6 @@
 // 文件系统实现 IUserPrefsRepo
 // 读 dataDir 下的 long-term.md / short-term.md
-//   - long-term: 主人手写 markdown, 整段返出 (但有 8KB cap, 防误塞大文件)
+//   - long-term: 用户手写 markdown, 整段返出 (但有 8KB cap, 防误塞大文件)
 //   - short-term: 每行 `YYYY-MM-DD: 描述`, 自动滤掉 > TTL_DAYS 的旧行
 //
 // SECURITY: 这两份文件的内容会直接拼入 LLM system prompt.
@@ -58,7 +58,7 @@ async function readSafeCapped(path: string, warn?: (msg: string) => void): Promi
 }
 
 // nowMs 注入而不是直接 Date.now() — 让函数可单测时间分支
-// trimStart() 有意为之: 主人在 markdown 列表里写 `- 2026-05-30: xxx`, regex 已用 `(?:-\s*)?`
+// trimStart() 有意为之: 用户在 markdown 列表里写 `- 2026-05-30: xxx`, regex 已用 `(?:-\s*)?`
 // 但兼容 `  2026-...` (额外空格) 还得先 trimStart 再匹配
 export function filterExpiredEntries(content: string, nowMs: number): string {
   if (content === '') return ''

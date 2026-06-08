@@ -7,7 +7,7 @@
 //   所以: 必须复用 sharedAudioCtx (unlock 已经在 gesture 内 resume 过的那个),
 //   并且**只有 ctx 已 running 时才 attach**;否则放弃可视化保住声音。
 //
-// Routing (主人 2026-06-07 拍板 "视觉不跟 DJ 跳, ducking 可以做"):
+// Routing (用户 2026-06-07 拍板 "视觉不跟 DJ 跳, ducking 可以做"):
 //   source ─┬─→ musicGain ─→ destination   (听得到的路径, 受 ducking 控制)
 //           └─→ analyser                    (旁路 tap, 不连 destination 不出声,
 //                                            只用来读 FFT 给 VizBars)

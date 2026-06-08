@@ -43,7 +43,7 @@ type Ripple = {
 
 const DROPS_PER_1000PX = 0.16 // 每 1000 px² 一滴 → 1920×1080 ≈ 330 滴 (从 0.35 调低保 60fps)
 const LAYER_SPEEDS: readonly [number, number, number] = [200, 420, 700] // px/s
-// 主人 2026-06-05: 太细长了不行 — 长度对半砍 + 宽度加一档, 让雨像短斜划而不是垂直长 streaks
+// 用户 2026-06-05: 太细长了不行 — 长度对半砍 + 宽度加一档, 让雨像短斜划而不是垂直长 streaks
 // 历次: [8, 14, 22] (太长) → [4, 7, 11] (短一半)
 const LAYER_LENS: readonly [number, number, number] = [4, 7, 11]
 // alpha 几度调 → 找夜色雨平衡
@@ -172,7 +172,7 @@ function stepDrops(drops: RainDrop[], dt: number, tilt: number, vp: Viewport): v
 
 function drawDrops(ctx: CanvasRenderingContext2D, drops: readonly RainDrop[]): void {
   // 之前用 lighter 模拟反光感, 但会让雨在暗夜背景上加亮发白, 跟"若隐若现"反向
-  // 改回 source-over, 让雨真的是半透叠在玻璃上 (主人 2026-06-05: 颜色不能是白色)
+  // 改回 source-over, 让雨真的是半透叠在玻璃上 (用户 2026-06-05: 颜色不能是白色)
   ctx.lineCap = 'round'
   for (let layer = 0; layer < 3; layer++) {
     ctx.beginPath()

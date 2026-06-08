@@ -1,7 +1,7 @@
 // DJ persona prompt 装配
 // 系统提示分三段:
 //   1. PERSONA       角色 + 真实电台 DJ 节奏感
-//   2. USER PREFS    主人手写的长/短期喜好 (从 data/user-prefs/*.md 读)
+//   2. USER PREFS    用户手写的长/短期喜好 (从 data/user-prefs/*.md 读)
 //   3. CONTEXT       当前场景 (currentSong / queueLen / weather)
 // 多轮历史 (最近 6 条) 转成 user/assistant 交替消息
 
@@ -55,14 +55,14 @@ type BuildArgs = {
   readonly userText: string
   readonly context?: DjContext
   readonly prefs?: UserPrefs
-  // 自动 distill 出的长期记忆 (跨 session 累积, "几天后回来 DJ 还认得主人")
+  // 自动 distill 出的长期记忆 (跨 session 累积, "几天后回来 DJ 还认得用户")
   readonly longTerm?: readonly LongTermEntry[]
 }
 
 export function buildDjPrompt(args: BuildArgs): readonly BrainMessage[] {
   const { history, userText, context, prefs, longTerm } = args
-  // system 段: PERSONA + 长期记忆 + 主人手写偏好 + 当前场景
-  // 顺序: PERSONA 永远在; 长期记忆 (有则放, 让 DJ 认得主人); prefs (手写补); context
+  // system 段: PERSONA + 长期记忆 + 用户手写偏好 + 当前场景
+  // 顺序: PERSONA 永远在; 长期记忆 (有则放, 让 DJ 认得用户); prefs (手写补); context
   const sections: string[] = [PERSONA]
   const ltBlock = formatLongTerm(longTerm)
   if (ltBlock !== null) sections.push(ltBlock)

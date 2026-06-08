@@ -1,6 +1,6 @@
 'use client'
 
-// ?adjust=listen 调试模式 (Listen 透视梯形 canvas) — 主人手按 1234 选角 +
+// ?adjust=listen 调试模式 (Listen 透视梯形 canvas) — 用户手按 1234 选角 +
 // 方向键贴 listen-bg 斜窗户拉定 weather canvas 形状.
 //
 // 触发: URL 加 ?adjust=listen
@@ -25,7 +25,7 @@ type LWVars = {
 const ALL_CORNERS = ['tl', 'tr', 'br', 'bl'] as const
 
 // 跟 globals.css .scene-weather-canvas 的 var fallback 一致 (viewport %)
-// 主人 2026-06-05 手动校准, 贴 listen-bg.png 的窗户透视
+// 用户 2026-06-05 手动校准, 贴 listen-bg.png 的窗户透视
 const LW_DEFAULT: LWVars = {
   corners: {
     tl: { x: 8.7, y: -0.7 },

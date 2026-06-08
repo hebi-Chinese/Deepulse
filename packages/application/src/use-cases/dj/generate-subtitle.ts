@@ -1,12 +1,12 @@
 // generateSubtitle use-case · 切歌时让 brain 生成一句字幕 (深夜电台口吻)
-// 替代旧的 useDjCloud 本地模板抽签 — 主人提的"DJ 是字幕贡献者", 跟 chat 用同一套大脑.
+// 替代旧的 useDjCloud 本地模板抽签 — 用户提的"DJ 是字幕贡献者", 跟 chat 用同一套大脑.
 //
 // 输入:
 //   - 当前歌 (title + artist)
 //   - 上一首歌 (可选, 用于"接续"语气)
 // 上下文:
-//   - longTerm: 跨 session 记忆 (DJ 几天后回来还认得主人)
-//   - prefs: 主人手写偏好
+//   - longTerm: 跨 session 记忆 (DJ 几天后回来还认得用户)
+//   - prefs: 用户手写偏好
 //   - session 内已经生成过的字幕 (Redis short-term 里, 让 DJ 不重复套路)
 //
 // 输出: 单句 ≤ 30 字中文, 不带任何控制标签
