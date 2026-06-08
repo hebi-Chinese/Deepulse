@@ -39,14 +39,8 @@ jobs:
 
       - name: Install deps
         # --frozen-lockfile 防 CI 偷偷升级依赖 (主人本机 pnpm-lock 是真相)
-        # --config.confirmModulesPurge=false: pnpm 11 在 CI 偶尔卡 "confirm purge" prompt
-        # 不显式 approve sharp/better-sqlite3/esbuild 的 build script → pnpm 11 静默拒绝
-        # 跑 --config.dangerouslyAllowAllBuilds=true 一刀切信任所有 install script (CI 环境安全)
-        run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
-        env:
-          # node-gyp 编译 better-sqlite3 native binding 用
-          CXX: g++
-          CC: gcc
+        # native build script 白名单已在 pnpm-workspace.yaml 的 onlyBuiltDependencies 列了
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm typecheck

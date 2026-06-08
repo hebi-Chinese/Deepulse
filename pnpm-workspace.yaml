@@ -67,7 +67,10 @@ catalog:
   lint-staged: ^15.2.0
   dependency-cruiser: ^16.7.0
 
-allowBuilds:
-  better-sqlite3: true
-  esbuild: true
-  sharp: true
+# pnpm 11 默认拒所有 install script (postinstall / preinstall) 防供应链攻击.
+# 这三个 native 包 (sqlite binding / esbuild / sharp) 必须能跑 install script,
+# 否则 better-sqlite3 没 native binding → server 起不来; sharp 没 binary → Next.js 图片优化崩.
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+  - sharp
