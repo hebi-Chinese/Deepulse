@@ -1,7 +1,10 @@
 packages:
   - 'apps/*'
   - 'packages/*'
-  - 'tools/*'
+  # tools/* 下只有 arch-test / configs 是 Node 子包, 其他 (blender / blender-mcp-main /
+  # voxcpm-server) 没 package.json. 列具体路径防 pnpm 11 把空目录当 workspace 找不到 package.json 报错.
+  - 'tools/arch-test'
+  - 'tools/configs'
 
 catalog:
   # ─── runtime / framework ───
