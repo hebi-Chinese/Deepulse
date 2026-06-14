@@ -1,5 +1,5 @@
 {
-  "name": "@claudio/pwa",
+  "name": "@deepulse/pwa",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claudio/shared": "workspace:*",
+    "@deepulse/shared": "workspace:*",
     "music-metadata": "^11.12.3",
     "next": "catalog:",
     "react": "catalog:",
@@ -20,7 +20,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@claudio/configs": "workspace:*",
+    "@deepulse/configs": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

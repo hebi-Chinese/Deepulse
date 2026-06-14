@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm'
 import { ncmAccount } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { INcmAccountRepo } from '@claudio/application'
+import type { INcmAccountRepo } from '@deepulse/application'
 
 export function createNcmAccountRepo(client: DbClient): INcmAccountRepo {
   return {

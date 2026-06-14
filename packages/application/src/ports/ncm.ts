@@ -1,7 +1,7 @@
 // 网易云客户端接口 · 实现：infrastructure/ncm/
 // 覆盖 v1 全部需要的端点：搜索 / 直链 / 歌词 / 登录 / 喜欢 / 推荐 / FM / 排行 / 云盘 / 画像快照
 
-import type { ArtistId, PlaylistId, Song, SongId } from '@claudio/domain'
+import type { ArtistId, PlaylistId, Song, SongId } from '@deepulse/domain'
 
 // 与网易云接口对齐的音质等级
 export type NcmAudioQuality = 'standard' | 'exhigh' | 'lossless' | 'hires'
@@ -81,6 +81,11 @@ export type INcmClient = {
   fetchUserSnapshot(): Promise<NcmUserSnapshot>
   getMyPlaylists(): Promise<readonly NcmPlaylistMeta[]>
   getPlaylistTracks(playlistId: PlaylistId, options?: { limit?: number }): Promise<readonly Song[]>
+  /**
+   * 批量拿歌曲元信息 (PRD-005: cold-start hydrate snapshot 用)
+   * 一次最多 ~100 个 ID (NCM song/detail 接口上限). 返 Map(songId -> Song), 缺的 ID 不在 map 里
+   */
+  batchSongDetail(songIds: readonly SongId[]): Promise<ReadonlyMap<SongId, Song>>
 
   // 互动
   like(songId: SongId, on: boolean): Promise<void>

@@ -9,7 +9,7 @@
 // 容错: brain 文本必须有 (没字幕 UI 会空), tts 失败给 audioUrl=null 让前端静默 — 文本
 // 还能展示, 用户在 F12 见到 warn
 
-import { generateSubtitle } from '@claudio/application'
+import { generateSubtitle } from '@deepulse/application'
 import { z } from 'zod'
 
 import type { Container } from '../composition.js'

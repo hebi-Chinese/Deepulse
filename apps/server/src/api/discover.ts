@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // 发现 API: 每日推荐 / 私人 FM / 心动 / 排行
-import { toSongId } from '@claudio/domain'
+import { toSongId } from '@deepulse/domain'
 import { z } from 'zod'
 
 import type { Container } from '../composition.js'

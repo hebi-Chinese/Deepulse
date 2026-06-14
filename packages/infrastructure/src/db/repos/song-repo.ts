@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // SongRepo · 缓存 NCM 歌曲元数据
 
-import { toAlbumId, toArtistId, toSongId, ValidationError } from '@claudio/domain'
+import { toAlbumId, toArtistId, toSongId, ValidationError } from '@deepulse/domain'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { songs, type DbSong } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { ISongRepo } from '@claudio/application'
-import type { Song, SongId } from '@claudio/domain'
+import type { ISongRepo } from '@deepulse/application'
+import type { Song, SongId } from '@deepulse/domain'
 
 const artistsJsonSchema = z.array(z.object({ id: z.string(), name: z.string() }))
 

@@ -1,5 +1,5 @@
 {
-  "name": "@claudio/domain",
+  "name": "@deepulse/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@claudio/configs": "workspace:*",
+    "@deepulse/configs": "workspace:*",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

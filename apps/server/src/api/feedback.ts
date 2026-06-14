@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // 喜欢 / 拉黑 API（写回 NCM）
 
-import { toSongId } from '@claudio/domain'
+import { toSongId } from '@deepulse/domain'
 import { z } from 'zod'
-
 
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'
-
 
 const bodySchema = z.object({
   songId: z.string().min(1),

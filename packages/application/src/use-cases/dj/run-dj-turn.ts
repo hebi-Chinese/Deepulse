@@ -12,7 +12,7 @@
 //   - TTS 失败 → 单句静默, 整轮不影响
 //   - persist 失败 → log warn (调用方接 result), 整轮不影响
 
-import { parseInlineActions } from '@claudio/shared/dj-ws'
+import { parseInlineActions } from '@deepulse/shared/dj-ws'
 
 import { buildDjPrompt } from '../../dj/prompt.js'
 import { SentenceSegmenter } from '../../dj/sentence-segmenter.js'
@@ -33,7 +33,7 @@ import type {
   SessionTurn,
   UserPrefs,
 } from '../../ports/index.js'
-import type { ParsedAction } from '@claudio/shared/dj-ws'
+import type { ParsedAction } from '@deepulse/shared/dj-ws'
 
 export type DjTurnEvent =
   | { readonly type: 'turn_start'; readonly turnId: string }

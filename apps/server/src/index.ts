@@ -1,7 +1,7 @@
-// Claudio Server · Fastify 入口
+// Deepulse Server · Fastify 入口
 // 流程：loadEnv → composition → cold-start → registerPlugins → listen
 
-import { createLogger, loadEnv } from '@claudio/shared'
+import { createLogger, loadEnv } from '@deepulse/shared'
 import cors from '@fastify/cors'
 import websocketPlugin from '@fastify/websocket'
 import Fastify from 'fastify'
@@ -12,6 +12,7 @@ import { createDjSubtitlePlugin } from './api/dj-subtitle.js'
 import { createDjWsPlugin } from './api/dj-ws.js'
 import { createFeedbackPlugin } from './api/feedback.js'
 import { createLoginPlugin } from './api/login.js'
+import { createPersonalizedBatchPlugin } from './api/personalized-batch.js'
 import { createPlaylistPlugin } from './api/playlist.js'
 import { createPlaysPlugin } from './api/plays.js'
 import { createSearchPlugin } from './api/search.js'
@@ -35,11 +36,9 @@ function logStartupConfig(env: ReturnType<typeof loadEnv>, log: LogLike): void {
   log.info(
     {
       brainType: env.BRAIN_TYPE,
-      deepseekUrl: env.DEEPSEEK_URL ?? '(none)',
-      ollamaUrl: env.OLLAMA_URL ?? '(none)',
-      openaiBaseUrl: env.OPENAI_BASE_URL ?? '(none)',
-      openaiModel: env.OPENAI_MODEL,
-      openaiKeyPrefix: env.OPENAI_API_KEY?.slice(0, 8) ?? '(none)',
+      aiUrl: env.AI_URL ?? '(none)',
+      aiModel: env.AI_MODEL,
+      aiKeyPrefix: env.AI_KEY?.slice(0, 8) ?? '(none)',
       ttsType: env.TTS_TYPE,
       ttsUrl: env.TTS_URL,
       voxcpmUrl: env.VOXCPM_URL ?? '(none)',
@@ -116,6 +115,7 @@ async function main(): Promise<void> {
   await app.register(createPlaysPlugin(container))
   await app.register(createDjSubtitlePlugin(container))
   await app.register(createDjWsPlugin(container))
+  await app.register(createPersonalizedBatchPlugin(container))
 
   installShutdown(app, container, logger)
 

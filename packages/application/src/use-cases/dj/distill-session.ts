@@ -3,7 +3,7 @@
 // 触发时机:
 //   - 进入 runDjTurn 前发现 shortTerm.isSessionActive()=false 且 loadCurrentSession() 非空
 //     → 上次 session 已过期但还没 distill → 现在做
-//   - 主人显式 endSession (按 "再见" / 切窗户) → 立刻调
+//   - 用户显式 endSession (按 "再见" / 切窗户) → 立刻调
 //
 // 失败语义:
 //   - brain 失败 → 不 append, 不 clear (下次还能重试)

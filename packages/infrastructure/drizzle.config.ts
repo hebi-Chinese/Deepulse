@@ -5,6 +5,6 @@ export default {
   out: './src/db/migrations',
   dialect: 'sqlite',
   dbCredentials: {
-    url: process.env['DATABASE_URL'] ?? './data/claudio.db',
+    url: process.env['DATABASE_URL'] ?? './data/deepulse.db',
   },
 } satisfies Config

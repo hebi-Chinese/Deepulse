@@ -1,4 +1,4 @@
-import config from '@claudio/configs/eslint'
+import config from '@deepulse/configs/eslint'
 
 export default [
   ...config,

@@ -8,7 +8,7 @@ import {
   toArtistId,
   toPlaylistId,
   toSongId,
-} from '@claudio/domain'
+} from '@deepulse/domain'
 // NCM 库是 CJS，ESM 不能 named import；解构重命名为 camelCase
 import NCM from 'NeteaseCloudMusicApi'
 
@@ -25,6 +25,7 @@ import {
   qrKeyBodySchema,
   recommendBodySchema,
   searchBodySchema,
+  songDetailBodySchema,
   songUrlBodySchema,
   stylePrefBodySchema,
   suggestBodySchema,
@@ -48,8 +49,8 @@ import type {
   NcmSearchResult,
   NcmSearchSuggestion,
   NcmUserSnapshot,
-} from '@claudio/application'
-import type { PlaylistId, Song, SongId } from '@claudio/domain'
+} from '@deepulse/application'
+import type { PlaylistId, Song, SongId } from '@deepulse/domain'
 import type { z } from 'zod'
 
 const {
@@ -66,6 +67,7 @@ const {
   playmode_intelligence_list: playmodeIntelligenceList,
   recommend_songs: recommendSongs,
   search_suggest: searchSuggestFn,
+  song_detail: songDetail,
   song_url_v1: songUrlV1,
   style_preference: stylePreference,
   toplist_detail: toplistDetail,
@@ -238,6 +240,34 @@ export class NcmClient implements INcmClient {
       'getPlaylistTracks',
     )
     return (body.songs ?? []).map(rawToSong)
+  }
+
+  /**
+   * NCM song/detail 一次最多 ~100 ID, 我们 cap 50 防 URL 太长. 超 50 自动分批
+   * 缺的 SongId (NCM 没返) 不在 map 里, caller 自己 guard
+   */
+  async batchSongDetail(songIds: readonly SongId[]): Promise<ReadonlyMap<SongId, Song>> {
+    const map = new Map<SongId, Song>()
+    if (songIds.length === 0) return map
+    const BATCH = 50
+    for (let i = 0; i < songIds.length; i += BATCH) {
+      const chunk = songIds.slice(i, i + BATCH)
+      // NCM song_detail 接 ids 字符串 (逗号分割) 或数组, 用 ids 数组形式
+      const idsParam = chunk.join(',')
+      const body = await callNcm(
+        () =>
+          songDetail(
+            this.withCookie({ ids: idsParam }) as unknown as Parameters<typeof songDetail>[0],
+          ),
+        songDetailBodySchema,
+        'batchSongDetail',
+      )
+      for (const raw of body.songs ?? []) {
+        const song = rawToSong(raw)
+        map.set(song.id, song)
+      }
+    }
+    return map
   }
 
   async heartMode(songId: SongId): Promise<readonly Song[]> {

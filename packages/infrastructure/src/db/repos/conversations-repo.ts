@@ -6,7 +6,7 @@
 import { conversations } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { ConversationEntry, IConversationsRepo } from '@claudio/application'
+import type { ConversationEntry, IConversationsRepo } from '@deepulse/application'
 
 export function createConversationsRepo(client: DbClient): IConversationsRepo {
   return {

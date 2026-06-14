@@ -2,7 +2,7 @@
 
 为啥要这层:
   VoxCPM (OpenBMB/VoxCPM2) 是 Python 库, model.generate(text, ...) 在进程内跑.
-  Claudio 后端是 Node/TS 的 Fastify, 不能跨语言直调, 所以包一层 HTTP.
+  Deepulse 后端是 Node/TS 的 Fastify, 不能跨语言直调, 所以包一层 HTTP.
 
 API:
   POST /synthesize { text, ... }  →  { audio_url }
@@ -33,12 +33,15 @@ from pydantic import BaseModel, Field
 from voxcpm import VoxCPM
 
 # ─── 配置 ──────────────────────────────────────────────────────────────
-# 模型: 默认从 HF cache (openbmb/VoxCPM2) 找; 主人 set VOXCPM_MODEL=./VoxCPM2
+# 模型: 默认从 HF cache (openbmb/VoxCPM2) 找; 用户 set VOXCPM_MODEL=./VoxCPM2
 # 指本地路径就用本地 (国内 ModelScope 下载到本地后这条用得着)
 MODEL_NAME = os.environ.get("VOXCPM_MODEL", "openbmb/VoxCPM2")
 HOST = os.environ.get("VOXCPM_HOST", "127.0.0.1")
 PORT = int(os.environ.get("VOXCPM_PORT", "8001"))
 OUT_DIR = Path(os.environ.get("VOXCPM_OUT_DIR", "outputs"))
+# device: 显式 'cuda' 比 auto 安全 — auto 在没 cuda 时静默 fallback CPU, 合成慢 10x
+# 没 GPU 的机器手动 set VOXCPM_DEVICE=cpu
+DEVICE = os.environ.get("VOXCPM_DEVICE", "cuda")
 # 限制单条文本长度防 OOM/超时 — vox 真上限是 token 不是字符, 留点裕度
 MAX_TEXT_LEN = 500
 
@@ -51,7 +54,7 @@ _model: VoxCPM | None = None
 def get_model() -> VoxCPM:
     global _model
     if _model is None:
-        _model = VoxCPM.from_pretrained(MODEL_NAME, load_denoiser=False)
+        _model = VoxCPM.from_pretrained(MODEL_NAME, load_denoiser=False, device=DEVICE)
     return _model
 
 
@@ -60,9 +63,11 @@ app = FastAPI(title="VoxCPM TTS wrapper", version="1.0")
 
 class SynthesizeRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=MAX_TEXT_LEN)
-    # cfg/timesteps 暴露给调用方调参; 默认按 vox README
+    # cfg/timesteps 暴露给调用方调参
+    # timesteps 默认 7 (vox README 是 10) — 4060 Laptop + SoVITS 共显存场景下抢算力,
+    # 7 步减 30% 推理时间, 中文电台口播音质差异感知不到
     cfg_value: float = Field(default=2.0, ge=0.5, le=5.0)
-    inference_timesteps: int = Field(default=10, ge=4, le=50)
+    inference_timesteps: int = Field(default=7, ge=4, le=50)
 
 
 class SynthesizeResponse(BaseModel):

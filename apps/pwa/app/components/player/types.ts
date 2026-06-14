@@ -3,15 +3,23 @@
 import type { ApiSong } from '../../lib/api'
 import type { LrcLine } from '../../lib/lrc'
 
-export type PlayMode = 'order' | 'loop' | 'single' | 'shuffle'
+// PRD-008 (2026-06-14): 加 'personalized' (个性化) — 听最后一首预拉 5 首 (50% 收藏 + 50% NCM 推荐), cap 150
+export type PlayMode = 'order' | 'loop' | 'single' | 'shuffle' | 'personalized'
 
-export const PLAY_MODES: readonly PlayMode[] = ['order', 'loop', 'single', 'shuffle']
+export const PLAY_MODES: readonly PlayMode[] = [
+  'order',
+  'loop',
+  'single',
+  'shuffle',
+  'personalized',
+]
 
 export const MODE_LABEL: Record<PlayMode, string> = {
   order: '顺序',
   loop: '列表循环',
   single: '单曲循环',
   shuffle: '随机',
+  personalized: '个性化',
 }
 
 export type PlayerState = {

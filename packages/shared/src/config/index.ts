@@ -1,26 +1,27 @@
 // env 校验：所有 env var 必须在这里声明 + zod 校验，不允许 process.env.X 散落
-// 用法：import { loadEnv } from '@claudio/shared/config'
+// 用法：import { loadEnv } from '@deepulse/shared/config'
 
 import { z } from 'zod'
 
-// 自动探测: env 里只有 DEEPSEEK_API_KEY 但 BRAIN_TYPE / OPENAI_* 都没**实质**给时,
-// 推断用户想走 deepseek. 让 fork 者不必必须走 claudio.bat 也能跑 — 直接 export
-// DEEPSEEK_API_KEY 然后 pnpm dev 即可
+// 自动探测: 用户 set 了 AI_KEY 但没 set BRAIN_TYPE → 默认走 deepseek
+// (deepseek 是 Deepulse 默认 brand, 见 memory project-two-form-plan)
 //
-// "实质" 的关键: 空字符串 / 仅空白 也当 "没给". 用户 shell 经常会有
-// `export OPENAI_API_KEY=""` 这种残留, 不能让那种把 auto-detect 顶掉.
+// 触发条件: BRAIN_TYPE 空 + AI_KEY 已设
+// 推断: BRAIN_TYPE=deepseek + AI_URL=https://api.deepseek.com/v1 (若未设) + AI_MODEL=deepseek-chat (若未设)
 //
-// 注: URL 不再由 autoInfer 负责 — brain factory 各 case 直接读 DEEPSEEK_URL 等
-// 专属 env. 用户哲学: brand 专属 URL, 不预填 default.
+// "已设" 的关键: 空字符串 / 仅空白 也当"没给". 用户 shell 经常会有
+// `export AI_KEY=""` 这种残留, 不能让那种把 auto-detect 顶掉.
 function autoInferDeepseek(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  if (isBlank(source['DEEPSEEK_API_KEY'])) return source
+  // 用户显式 set BRAIN_TYPE → 不推 (尊重显式)
   if (!isBlank(source['BRAIN_TYPE'])) return source
-  if (!isBlank(source['OPENAI_API_KEY'])) return source
+  // 没 set AI_KEY → 没法推, 让后续 zod / brain factory 抛
+  if (isBlank(source['AI_KEY'])) return source
+
   return {
     ...source,
     BRAIN_TYPE: 'deepseek',
-    OPENAI_API_KEY: source['DEEPSEEK_API_KEY'],
-    OPENAI_MODEL: isBlank(source['OPENAI_MODEL']) ? 'deepseek-chat' : source['OPENAI_MODEL'],
+    AI_URL: isBlank(source['AI_URL']) ? 'https://api.deepseek.com/v1' : source['AI_URL'],
+    AI_MODEL: isBlank(source['AI_MODEL']) ? 'deepseek-chat' : source['AI_MODEL'],
   }
 }
 
@@ -41,7 +42,7 @@ const envSchema = z.object({
   TTS_URL: z.string().url().default('http://127.0.0.1:8000'),
 
   // TTS 实现选择 — mock 默认让 fork 者首次 demo 不卡 (返回静音 wav, UI 全 ok)
-  //   gpt-sovits : 用户本地, 流萤声线 (需起 GPT-SoVITS server :8000)
+  //   gpt-sovits : 用户本地 (需起 GPT-SoVITS server :8000, 中文专用)
   //   voxcpm     : OpenBMB VoxCPM2, voice design 自然语言描声 (需起 tools/voxcpm-server :8001)
   TTS_TYPE: z.enum(['mock', 'gpt-sovits', 'voxcpm']).default('mock'),
 
@@ -50,27 +51,25 @@ const envSchema = z.object({
   // VoxCPM voice design 自然语言描述声音 (性别/年龄/情绪/语速); 默认温柔女声
   VOXCPM_VOICE_DESIGN: z.string().default('温柔女声, 25 岁, 中性情绪, 语速适中'),
 
-  // Brain（PRD §10 Q5）
-  // 默认 openai-compat — fork 者拿到 repo 后改 BRAIN_TYPE + 配对应 *_URL + *_API_KEY 就能跑
-  // 用户想用 claude CLI 走 BRAIN_TYPE=claude 显式打开
+  // Brain · BYO LLM (PRD-002 简化, 2026-06-XX)
+  // 哲学: 每个 brain 都用同一对孔位 AI_URL + AI_KEY + AI_MODEL, 一一对应减少出错
+  // BRAIN_TYPE 决定走哪条代码路径 (claude CLI vs OpenAI compat)
+  //   BRAIN_TYPE=claude        用户本地 Claude CLI 子进程, 不需 AI_*
+  //   BRAIN_TYPE=deepseek      AI_URL=https://api.deepseek.com/v1, AI_MODEL=deepseek-chat
+  //   BRAIN_TYPE=ollama        AI_URL=http://localhost:11434/v1, AI_MODEL=qwen2.5:7b
+  //   BRAIN_TYPE=openai-compat AI_URL=自填 (官方/自部署/任何 OpenAI-compatible)
+  //   BRAIN_TYPE=custom        composition root 自塞 URL resolver
   BRAIN_TYPE: z
     .enum(['claude', 'deepseek', 'ollama', 'openai-compat', 'custom'])
     .default('openai-compat'),
 
-  // OpenAI-Compatible Brain · BYO LLM
-  // 用户哲学 (2026-06-07): 每 brand 一个专属 URL env, 不预填 default. factory 在 brain.ts
-  // 里各 case 检查对应字段, 没设就 startup throw — 不静默走错地方.
-  //   BRAIN_TYPE=deepseek      需 set DEEPSEEK_URL (e.g. https://api.deepseek.com/v1)
-  //   BRAIN_TYPE=ollama        需 set OLLAMA_URL (e.g. http://localhost:11434/v1)
-  //   BRAIN_TYPE=openai-compat 需 set OPENAI_BASE_URL (官方 / 自部署 / 任何 OpenAI-compatible)
-  DEEPSEEK_URL: z.string().url().optional(),
-  OLLAMA_URL: z.string().url().optional(),
-  OPENAI_BASE_URL: z.string().url().optional(),
-  OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  // 通用 AI 孔位 — 所有 brand 共用 (PRD-002 决议: 改 6 孔为 3 孔, 风险更小)
+  AI_URL: z.string().url().optional(),
+  AI_KEY: z.string().optional(),
+  AI_MODEL: z.string().default('gpt-4o-mini'),
 
   // 数据库
-  DATABASE_URL: z.string().default('./data/claudio.db'),
+  DATABASE_URL: z.string().default('./data/deepulse.db'),
 
   // 网易云（可选 cookie；不传则只能播放无版权限制的歌）
   NCM_COOKIE: z.string().optional(),

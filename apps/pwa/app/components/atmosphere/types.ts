@@ -23,13 +23,6 @@ export type Pointer = {
   readonly inside: boolean
 }
 
-// 用户点击产生的涟漪事件
-export type RippleSpawn = {
-  readonly x: number
-  readonly y: number
-  readonly atMs: number
-}
-
 // 引擎对外契约:任何 weather 都实现这套
 // init: viewport 首次拿到时调一次,准备粒子池
 // resize: viewport 变化重铺
@@ -39,7 +32,7 @@ export type RippleSpawn = {
 export type AtmosphereEngine = {
   readonly init: (viewport: Viewport) => void
   readonly resize: (viewport: Viewport) => void
-  readonly step: (dtMs: number, pointer: Pointer, ripples: readonly RippleSpawn[]) => void
+  readonly step: (dtMs: number, pointer: Pointer) => void
   readonly draw: (ctx: CanvasRenderingContext2D, viewport: Viewport) => void
   readonly dispose: () => void
 }

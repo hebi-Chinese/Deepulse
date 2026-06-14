@@ -2,75 +2,79 @@ import { describe, expect, it } from 'vitest'
 
 import { loadEnv } from './index.js'
 
-// autoInferDeepseek 的边界 case: 空字符串/全空白/未定义都应当当作"没给", 让 auto-detect 接管.
-// 用户哲学 (2026-06-07): URL 一层, brand 专属 env var, autoInfer 只 set BRAIN_TYPE + API_KEY 映射,
-// URL 让 brain factory 各 case 检查对应 *_URL env 自己 throw.
+// PRD-002 (2026-06-XX): env 简化为 AI_URL + AI_KEY + AI_MODEL 三孔
+// autoInferDeepseek 触发条件: AI_KEY 已设 + BRAIN_TYPE 未设 → 推 deepseek 默认值
 
 describe('loadEnv autoInferDeepseek', () => {
-  it('auto-switches to deepseek when only DEEPSEEK_API_KEY is set', () => {
-    const env = loadEnv({ DEEPSEEK_API_KEY: 'sk-ds-real' })
+  it('auto-switches to deepseek when only AI_KEY is set', () => {
+    const env = loadEnv({ AI_KEY: 'sk-ds-real' })
     expect(env.BRAIN_TYPE).toBe('deepseek')
-    expect(env.OPENAI_API_KEY).toBe('sk-ds-real')
-    expect(env.OPENAI_MODEL).toBe('deepseek-chat')
-    // URL 不再由 autoInfer 设, brain factory 自己读 DEEPSEEK_URL
-    expect(env.DEEPSEEK_URL).toBeUndefined()
-    expect(env.OPENAI_BASE_URL).toBeUndefined()
+    expect(env.AI_KEY).toBe('sk-ds-real')
+    expect(env.AI_URL).toBe('https://api.deepseek.com/v1')
+    expect(env.AI_MODEL).toBe('deepseek-chat')
   })
 
-  it('treats empty OPENAI_API_KEY as not set (shell 残留 OPENAI_API_KEY="")', () => {
+  it('treats whitespace-only BRAIN_TYPE as not set (shell 残留 BRAIN_TYPE="   ")', () => {
     const env = loadEnv({
-      DEEPSEEK_API_KEY: 'sk-ds-real',
-      OPENAI_API_KEY: '',
-    })
-    expect(env.BRAIN_TYPE).toBe('deepseek')
-    expect(env.OPENAI_API_KEY).toBe('sk-ds-real')
-  })
-
-  it('treats whitespace-only BRAIN_TYPE as not set', () => {
-    const env = loadEnv({
-      DEEPSEEK_API_KEY: 'sk-ds-real',
+      AI_KEY: 'sk-ds-real',
       BRAIN_TYPE: '   ',
     })
     expect(env.BRAIN_TYPE).toBe('deepseek')
   })
 
-  it('respects explicit BRAIN_TYPE=openai-compat (no auto-switch)', () => {
+  it('treats empty AI_KEY as not set (no inference)', () => {
+    const env = loadEnv({ AI_KEY: '' })
+    expect(env.BRAIN_TYPE).toBe('openai-compat') // schema default
+    expect(env.AI_URL).toBeUndefined()
+  })
+
+  it('respects explicit BRAIN_TYPE (no auto-switch even with AI_KEY)', () => {
     const env = loadEnv({
-      DEEPSEEK_API_KEY: 'sk-ds',
+      AI_KEY: 'sk-openai',
       BRAIN_TYPE: 'openai-compat',
-      OPENAI_API_KEY: 'sk-openai-real',
-      OPENAI_BASE_URL: 'https://api.openai.com/v1',
+      AI_URL: 'https://api.openai.com/v1',
     })
     expect(env.BRAIN_TYPE).toBe('openai-compat')
-    expect(env.OPENAI_API_KEY).toBe('sk-openai-real')
-    expect(env.OPENAI_BASE_URL).toBe('https://api.openai.com/v1')
+    expect(env.AI_KEY).toBe('sk-openai')
+    expect(env.AI_URL).toBe('https://api.openai.com/v1')
   })
 
-  it('does not infer when DEEPSEEK_API_KEY is empty', () => {
-    const env = loadEnv({ DEEPSEEK_API_KEY: '' })
-    expect(env.BRAIN_TYPE).toBe('openai-compat')
-    expect(env.OPENAI_BASE_URL).toBeUndefined() // 没 default 了
+  it('respects explicit AI_URL even when triggering deepseek auto-infer', () => {
+    // 用户用 deepseek 代理 URL (e.g. cloudflare proxy)
+    const env = loadEnv({
+      AI_KEY: 'sk-real',
+      AI_URL: 'https://my-deepseek-proxy.example.com/v1',
+    })
+    expect(env.BRAIN_TYPE).toBe('deepseek')
+    expect(env.AI_URL).toBe('https://my-deepseek-proxy.example.com/v1')
   })
 
-  it('does not infer when neither key is set', () => {
+  it('respects explicit AI_MODEL when triggering deepseek auto-infer', () => {
+    const env = loadEnv({
+      AI_KEY: 'sk-real',
+      AI_MODEL: 'deepseek-reasoner',
+    })
+    expect(env.BRAIN_TYPE).toBe('deepseek')
+    expect(env.AI_MODEL).toBe('deepseek-reasoner')
+  })
+
+  it('does not infer when neither AI_KEY nor BRAIN_TYPE is set', () => {
     const env = loadEnv({})
     expect(env.BRAIN_TYPE).toBe('openai-compat')
-    expect(env.DEEPSEEK_URL).toBeUndefined()
-    expect(env.OLLAMA_URL).toBeUndefined()
-    expect(env.OPENAI_BASE_URL).toBeUndefined()
+    expect(env.AI_URL).toBeUndefined()
+    expect(env.AI_KEY).toBeUndefined()
   })
 
-  // 新增: 锁定"brand 专属 URL env" 模式 — 三个 URL var 各自独立
-  it('accepts brand-exclusive URL envs (DEEPSEEK_URL / OLLAMA_URL / OPENAI_BASE_URL)', () => {
+  it('accepts fully explicit env (e.g. ollama)', () => {
     const env = loadEnv({
-      BRAIN_TYPE: 'deepseek',
-      OPENAI_API_KEY: 'sk-real',
-      DEEPSEEK_URL: 'https://api.deepseek.com/v1',
-      OLLAMA_URL: 'http://localhost:11434/v1',
-      OPENAI_BASE_URL: 'https://x.example.com/v1',
+      BRAIN_TYPE: 'ollama',
+      AI_URL: 'http://localhost:11434/v1',
+      AI_KEY: 'fake-ollama-key',
+      AI_MODEL: 'qwen2.5:7b',
     })
-    expect(env.DEEPSEEK_URL).toBe('https://api.deepseek.com/v1')
-    expect(env.OLLAMA_URL).toBe('http://localhost:11434/v1')
-    expect(env.OPENAI_BASE_URL).toBe('https://x.example.com/v1')
+    expect(env.BRAIN_TYPE).toBe('ollama')
+    expect(env.AI_URL).toBe('http://localhost:11434/v1')
+    expect(env.AI_KEY).toBe('fake-ollama-key')
+    expect(env.AI_MODEL).toBe('qwen2.5:7b')
   })
 })

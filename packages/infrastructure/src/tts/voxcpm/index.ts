@@ -5,11 +5,11 @@
 //   2) payload 用 voice_design (自然语言描述), 不用 model_name + emotion
 //      → 我们把 IBuilt-in emotion 通过前缀拼进 voice_design 让调用方零改动
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { request } from 'undici'
 import { z } from 'zod'
 
-import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@claudio/application'
+import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@deepulse/application'
 
 // vox 推理时间 cold start 比 sovits 长 (模型 4GB), 第一条留宽; 后续都 < 10s
 const HEADERS_TIMEOUT_MS = 60_000
@@ -22,13 +22,11 @@ const synthesizeResponseSchema = z.object({
 })
 
 // emotion → 中文前缀, 拼进 voice_design 让 vox 自己渲染情绪
-// 不在 server 端处理是因为 server 应只做 model 翻译, 不知道 Claudio 的 emotion enum
+// 不在 server 端处理是因为 server 应只做 model 翻译, 不知道 Deepulse 的 emotion enum
+// 只列正面 + 中性, 跟 port TTS_EMOTIONS 对齐 (负面情绪产品上不做)
 const EMOTION_HINTS: Record<string, string> = {
   开心: '语气开心明亮',
-  难过: '语气低沉伤感',
-  生气: '语气克制略带不悦',
   中立: '语气平稳',
-  害羞: '语气小声羞涩',
 }
 
 export class VoxCpmTtsClient implements ITtsClient {

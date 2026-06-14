@@ -1,5 +1,5 @@
 {
-  "name": "@claudio/server",
+  "name": "@deepulse/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,10 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claudio/application": "workspace:*",
-    "@claudio/domain": "workspace:*",
-    "@claudio/infrastructure": "workspace:*",
-    "@claudio/shared": "workspace:*",
+    "@deepulse/application": "workspace:*",
+    "@deepulse/domain": "workspace:*",
+    "@deepulse/infrastructure": "workspace:*",
+    "@deepulse/shared": "workspace:*",
     "@fastify/cors": "catalog:",
     "@fastify/websocket": "catalog:",
     "fastify": "catalog:",
@@ -25,7 +25,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@claudio/configs": "workspace:*",
+    "@deepulse/configs": "workspace:*",
     "@types/node": "catalog:",
     "@types/node-cron": "catalog:",
     "@types/ws": "^8.18.1",

@@ -1,5 +1,5 @@
 // Pino 日志封装 · 结构化输出 + redact 敏感字段
-// 用法：import { createLogger } from '@claudio/shared/logger'
+// 用法：import { createLogger } from '@deepulse/shared/logger'
 
 import { isatty } from 'node:tty'
 

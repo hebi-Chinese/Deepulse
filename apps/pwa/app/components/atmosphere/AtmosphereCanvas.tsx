@@ -1,7 +1,7 @@
 'use client'
 
 // AtmosphereCanvas · 全屏 fixed canvas + rAF 调度 + 引擎切换
-// 鼠标移动 → pointer; 点击 → ripples (供雨景做水花用)
+// 鼠标移动 → pointer (供雨景做风向)
 // 自动响应: prefers-reduced-motion / document.hidden / resize / dpr
 // 不依赖 React 状态除开 weather prop,避免每帧 re-render
 
@@ -11,7 +11,7 @@ import { createClearEngine } from './ClearEngine'
 import { createRainEngine } from './RainEngine'
 import { createSnowEngine } from './SnowEngine'
 
-import type { AtmosphereEngine, Pointer, RippleSpawn, Viewport, Weather } from './types'
+import type { AtmosphereEngine, Pointer, Viewport, Weather } from './types'
 
 type Props = {
   readonly weather: Weather
@@ -84,7 +84,6 @@ type LoopContext = {
   readonly ctx: CanvasRenderingContext2D
   readonly engine: AtmosphereEngine
   readonly pointer: MutablePointer
-  readonly pendingRipples: RippleSpawn[]
   readonly viewportRef: ViewportRef
 }
 
@@ -98,7 +97,6 @@ function mountLoop(
     ctx,
     engine,
     pointer: { x: 0, y: 0, inside: false },
-    pendingRipples: [],
     viewportRef: { current: readViewport(canvas) },
   }
   syncCanvasSize(canvas, ctx, loopCtx.viewportRef.current)
@@ -128,19 +126,13 @@ function attachEvents(ctx: LoopContext): () => void {
   const onPointerLeave = (): void => {
     ctx.pointer.inside = false
   }
-  const onClick = (e: PointerEvent): void => {
-    ctx.pendingRipples.push({ x: e.clientX, y: e.clientY, atMs: performance.now() })
-  }
   window.addEventListener('resize', onResize)
   window.addEventListener('pointermove', onPointerMove, { passive: true })
   window.addEventListener('pointerleave', onPointerLeave, { passive: true })
-  // 用 capture,player 按钮可能 stopPropagation
-  window.addEventListener('pointerdown', onClick, { capture: true, passive: true })
   return () => {
     window.removeEventListener('resize', onResize)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerleave', onPointerLeave)
-    window.removeEventListener('pointerdown', onClick, { capture: true })
   }
 }
 
@@ -156,8 +148,7 @@ function startRafLoop(loopCtx: LoopContext): () => void {
       y: loopCtx.pointer.y,
       inside: loopCtx.pointer.inside,
     }
-    const ripplesCopy = loopCtx.pendingRipples.splice(0, loopCtx.pendingRipples.length)
-    loopCtx.engine.step(dtMs, snapshotPointer, ripplesCopy)
+    loopCtx.engine.step(dtMs, snapshotPointer)
     const vp = loopCtx.viewportRef.current
     loopCtx.ctx.clearRect(0, 0, vp.width, vp.height)
     loopCtx.engine.draw(loopCtx.ctx, vp)

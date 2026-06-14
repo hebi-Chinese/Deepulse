@@ -2,14 +2,14 @@
 // NcmSnapshotRepo · 存 NCM cold start 拉的用户画像
 // 单条记录 (id=1) 覆盖更新
 
-import { ValidationError } from '@claudio/domain'
+import { ValidationError } from '@deepulse/domain'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { ncmAccount, ncmSnapshot } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { INcmSnapshotRepo, NcmUserSnapshot } from '@claudio/application'
+import type { INcmSnapshotRepo, NcmUserSnapshot } from '@deepulse/application'
 
 // 边界校验: DB 里的 JSON 反序列化时,至少保证顶层 shape + 关键嵌套字段合法
 // 完整 schema 等 v1.5 (应用层把 NcmUserSnapshot 拆 zod 后再共享)

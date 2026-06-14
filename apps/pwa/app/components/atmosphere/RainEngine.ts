@@ -1,8 +1,8 @@
-// 雨景引擎 · 3 层视差雨 + 玻璃面板水滴 + 点击涟漪 + 鼠标风向
+// 雨景引擎 · 3 层视差雨 + 玻璃面板水滴 + 鼠标风向
 // 全 Canvas2D,无三方依赖
-// 性能: 60 fps @ ~180 粒子 + ~20 droplet + ~6 ripple,modern device 完全胜任
+// 性能: 60 fps @ ~180 粒子 + ~20 droplet,modern device 完全胜任
 
-import type { AtmosphereEngine, Pointer, RippleSpawn, Viewport } from './types'
+import type { AtmosphereEngine, Pointer, Viewport } from './types'
 
 type RainDrop = {
   x: number
@@ -28,15 +28,6 @@ type GlassDroplet = {
   ageMs: number
   /** 上次合并时间 */
   lastMergeMs: number
-}
-
-type Ripple = {
-  x: number
-  y: number
-  /** 当前半径 */
-  r: number
-  /** 起始时间 */
-  startMs: number
 }
 
 // ─── 物理 / 视觉常量 ──────────────────────────────────────────────────────
@@ -69,15 +60,11 @@ const GLASS_GRAVITY = 280 // px/s² (slow,粘在玻璃上)
 const GLASS_MERGE_DIST = 1.5 // 中心距 < (rA + rB) * 此倍数时合并
 const GLASS_EVAPORATE_MS = 12_000
 
-const RIPPLE_MAX_R = 220
-const RIPPLE_DURATION_MS = 1100
-
 // ─── 工厂 ────────────────────────────────────────────────────────────────
 
 export function createRainEngine(): AtmosphereEngine {
   const drops: RainDrop[] = []
   const glass: GlassDroplet[] = []
-  const ripples: Ripple[] = []
   let viewport: Viewport = { width: 0, height: 0, dpr: 1 }
   let glassSpawnAccumulator = 0
   let nowMs = 0
@@ -99,7 +86,7 @@ export function createRainEngine(): AtmosphereEngine {
       }
     },
 
-    step(dtMs, pointer, newRipples) {
+    step(dtMs, pointer) {
       const dt = dtMs / 1000
       nowMs += dtMs
       const tilt = WIND_BASE_TILT + pointerWind(pointer, viewport)
@@ -111,20 +98,16 @@ export function createRainEngine(): AtmosphereEngine {
         spawnGlass(glass, viewport, nowMs)
       }
       mergeGlass(glass, nowMs)
-      enqueueRipples(ripples, newRipples, nowMs)
-      stepRipples(ripples, nowMs)
     },
 
     draw(ctx, vp) {
       drawDrops(ctx, drops)
-      drawRipples(ctx, ripples, nowMs)
       drawGlass(ctx, glass, nowMs, vp)
     },
 
     dispose() {
       drops.length = 0
       glass.length = 0
-      ripples.length = 0
     },
   }
 }
@@ -286,53 +269,6 @@ function drawGlass(
       tail.addColorStop(1, `rgba(200,220,240,0)`)
       ctx.fillStyle = tail
       ctx.fillRect(g.x - g.r * 0.6, g.y - tailLen, g.r * 1.2, tailLen)
-    }
-  }
-}
-
-// ─── ripples ─────────────────────────────────────────────────────────────
-
-// 入队时改用引擎时钟,丢弃 spawn.atMs (它是 performance.now,跟 engine.nowMs 不同基)
-function enqueueRipples(ripples: Ripple[], spawns: readonly RippleSpawn[], nowMs: number): void {
-  for (const _s of spawns) {
-    ripples.push({ x: _s.x, y: _s.y, r: 0, startMs: nowMs })
-  }
-}
-
-function stepRipples(ripples: Ripple[], atMs: number): void {
-  for (let i = ripples.length - 1; i >= 0; i--) {
-    const r = ripples[i]
-    if (r === undefined) continue
-    const t = (atMs - r.startMs) / RIPPLE_DURATION_MS
-    if (t >= 1) {
-      ripples.splice(i, 1)
-      continue
-    }
-    // easeOutExpo 半径增长
-    r.r = RIPPLE_MAX_R * (1 - 2 ** (-10 * t))
-  }
-}
-
-function drawRipples(
-  ctx: CanvasRenderingContext2D,
-  ripples: readonly Ripple[],
-  atMs: number,
-): void {
-  for (const r of ripples) {
-    const t = (atMs - r.startMs) / RIPPLE_DURATION_MS
-    const alpha = (1 - t) * 0.55
-    ctx.strokeStyle = `rgba(200,220,255,${String(alpha)})`
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2)
-    ctx.stroke()
-    // 内圈次涟漪
-    if (r.r > 30) {
-      ctx.strokeStyle = `rgba(200,220,255,${String(alpha * 0.5)})`
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.arc(r.x, r.y, r.r * 0.65, 0, Math.PI * 2)
-      ctx.stroke()
     }
   }
 }

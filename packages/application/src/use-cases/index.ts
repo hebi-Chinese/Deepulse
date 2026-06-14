@@ -10,6 +10,8 @@ export const USE_CASES_VERSION = 'm3-1' as const
 
 export * from './dj/run-dj-turn.js'
 export * from './dj/distill-session.js'
+export * from './dj/distill-ncm-taste.js'
 export * from './dj/generate-subtitle.js'
+export * from './dj/generate-personalized-batch.js'
 export * from './login/complete-qr-login.js'
 export * from './snapshot/refresh-user-snapshot.js'

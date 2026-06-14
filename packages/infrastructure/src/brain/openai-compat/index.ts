@@ -12,10 +12,10 @@
 //   Body: { model, messages, stream?, response_format?, temperature?, max_tokens? }
 //   Stream: SSE, 每行 `data: {json}` 直到 `data: [DONE]`
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { z } from 'zod'
 
-import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/application'
+import type { IBrain, BrainMessage, BrainGenerateOptions } from '@deepulse/application'
 
 export type OpenAICompatConfig = {
   /**

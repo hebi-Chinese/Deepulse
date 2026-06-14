@@ -76,7 +76,7 @@ type Dict = {
 }
 
 const ZH: Dict = {
-  appName: 'Claudio',
+  appName: 'Deepulse',
   tagline: '个人 AI 电台',
   listen: '听歌',
   browse: '浏览',
@@ -142,7 +142,7 @@ const ZH: Dict = {
 }
 
 const EN: Dict = {
-  appName: 'Claudio',
+  appName: 'Deepulse',
   tagline: 'Personal AI radio',
   listen: 'Listen',
   browse: 'Browse',

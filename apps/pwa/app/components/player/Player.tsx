@@ -234,12 +234,13 @@ function BottomFloats({ p }: { readonly p: ShellProps }) {
     <WindowToggle
       mode={p.view.mode}
       language={p.language}
-      enterDisabled={p.logic.currentSong === undefined}
       onEnter={() => {
+        // PRD-006 (2026-06-14): 没歌也能进 Listen, 让用户能纯欣赏场景
+        // currentSong 有时才标 trackMeta (它依赖当前歌), 没歌跳过
         if (p.logic.currentSong !== undefined) {
           p.trackMeta.markUserInitiated()
-          p.view.enterListen()
         }
+        p.view.enterListen()
       }}
       onExit={p.view.exitListen}
     />

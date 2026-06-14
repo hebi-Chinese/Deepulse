@@ -3,7 +3,7 @@
 //
 // 不在控制台 spam log: 一次 warn 标识当前是 mock 模式即可
 
-import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@claudio/application'
+import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@deepulse/application'
 
 // 1 秒 mono 16-bit 22050Hz 静音 wav, base64 内联 (~860 字节)
 const SILENT_WAV_DATA_URI = buildSilentWavDataUri()

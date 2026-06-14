@@ -34,7 +34,7 @@ export function SettingsPanel({ open, onClose, language, weather, onWeatherChang
         <PanelHeader title={t('settings')} closeLabel={t('settingsClose')} onClose={onClose} />
         <PanelBody language={language} weather={weather} onWeatherChange={onWeatherChange} />
         <footer className="mt-auto pt-4 text-xs text-white/40">
-          <p>Claudio · v0.1</p>
+          <p>Deepulse · v0.1</p>
         </footer>
       </aside>
     </>

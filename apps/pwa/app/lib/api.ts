@@ -76,6 +76,13 @@ const djSubtitleRespSchema = z.object({
   audioUrl: z.string().nullable(),
 })
 
+// PRD-008: personalized (个性化) 模式拉 5 首推荐. server 返 ok+songs 或 ok:false+reason
+const personalizedBatchRespSchema = z.discriminatedUnion('ok', [
+  z.object({ ok: z.literal(true), songs: z.array(apiSongSchema) }),
+  z.object({ ok: z.literal(false), reason: z.string() }),
+])
+export type ApiPersonalizedBatchResp = z.infer<typeof personalizedBatchRespSchema>
+
 export type ApiArtist = z.infer<typeof apiArtistSchema>
 export type ApiAlbum = z.infer<typeof apiAlbumSchema>
 type ApiSongBase = z.infer<typeof apiSongSchema>
@@ -177,4 +184,23 @@ export const api = {
     previousSong?: { title: string; artist: string }
     userInitiated: boolean
   }) => post('/api/dj/subtitle', djSubtitleRespSchema, body),
+
+  // PRD-008 (2026-06-14): 拉 5 首个性化推荐 (50% 收藏 + 50% NCM FM)
+  // 注: 400 时 throw, 但 response body 是 discriminated union — 因为 server fail 时返 400 reason
+  // 我们用 fetch 直接调以分别处理 400 (含 ok:false 的 schema)
+  personalizedBatch: async (
+    excludeIds: readonly string[],
+    count = 5,
+  ): Promise<ApiPersonalizedBatchResp> => {
+    const res = await fetch(`${env.serverUrl}/api/dj/personalized-batch`, {
+      method: 'POST',
+      credentials: 'include',
+      // eslint-disable-next-line @typescript-eslint/naming-convention -- HTTP header
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ excludeIds, count }),
+    })
+    // 不走 res.ok 检查 — 400 也要拿到 reason
+    const raw: unknown = await res.json()
+    return validate(raw, personalizedBatchRespSchema, '/api/dj/personalized-batch')
+  },
 }

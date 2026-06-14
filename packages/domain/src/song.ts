@@ -1,5 +1,5 @@
 // 歌曲实体 · 业务核心
-// readonly 默认；运行时校验在 @claudio/shared/schemas，这里只声明结构
+// readonly 默认；运行时校验在 @deepulse/shared/schemas，这里只声明结构
 
 import type { SongId, ArtistId, AlbumId } from './ids.js'
 

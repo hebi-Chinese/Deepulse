@@ -8,7 +8,7 @@ import { Redis } from 'ioredis'
 import { createInMemoryShortTermRepo } from './in-memory-repo.js'
 import { createRedisShortTermRepo } from './redis-repo.js'
 
-import type { IClock, IShortTermMemoryRepo } from '@claudio/application'
+import type { IClock, IShortTermMemoryRepo } from '@deepulse/application'
 
 export type ShortTermMemoryConfig = {
   /** Redis 连接串 (e.g. "redis://localhost:6379"); undefined → in-memory */

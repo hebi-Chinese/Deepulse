@@ -10,7 +10,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { IUserPrefsRepo, UserPrefs } from '@claudio/application'
+import type { IUserPrefsRepo, UserPrefs } from '@deepulse/application'
 
 const TTL_DAYS = 7
 const MAX_BYTES_PER_FILE = 8 * 1024

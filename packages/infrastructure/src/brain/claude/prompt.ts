@@ -1,7 +1,7 @@
 // 把 BrainMessage[] 拆成 systemPrompt + userPrompt
 // claude CLI 接收 --system-prompt 和单个 prompt 参数,所以把 system 块聚合、其余拼对话
 
-import type { BrainMessage } from '@claudio/application'
+import type { BrainMessage } from '@deepulse/application'
 
 export type SplitPrompt = {
   readonly systemPrompt: string | undefined

@@ -1,7 +1,7 @@
 // TTS 工厂 · 根据 TTS_TYPE env 选实现
 //
 // 现有实现:
-//   - gpt-sovits : 用户本地 GPT-SoVITS server (流萤声线, 需要 GPU + 部署)
+//   - gpt-sovits : 用户本地 GPT-SoVITS server (中文专用, 需要 GPU + 部署)
 //   - mock       : 默认, 返回静音 wav, fork 者首次跑能完整 demo UI 不报错
 //   - voxcpm     : OpenBMB VoxCPM2, 30 语言 + voice design (自然语言描述声音);
 //                  需要先起 tools/voxcpm-server (Python FastAPI wrapper)
@@ -15,7 +15,7 @@ import { GptSovitsTtsClient } from './gpt-sovits/index.js'
 import { MockTtsClient } from './mock/index.js'
 import { VoxCpmTtsClient } from './voxcpm/index.js'
 
-import type { ITtsClient } from '@claudio/application'
+import type { ITtsClient } from '@deepulse/application'
 
 export type TtsType = 'gpt-sovits' | 'mock' | 'voxcpm'
 

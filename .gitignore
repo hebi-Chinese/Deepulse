@@ -15,8 +15,8 @@ build/
 *.db-wal
 *.db-shm
 data/
-# 但 user-prefs 模板要进 git (主人首次 clone 看得到示例 + 说明)
-# 实际填写的内容也会跟着进, 这是有意的 — Claudio 是单用户项目, prefs 本身可视为代码
+# 但 user-prefs 模板要进 git (用户首次 clone 看得到示例 + 说明)
+# 实际填写的内容也会跟着进, 这是有意的 — Deepulse 是单用户项目, prefs 本身可视为代码
 !apps/server/data/
 !apps/server/data/user-prefs/
 !apps/server/data/user-prefs/*.md
@@ -62,3 +62,10 @@ yarn-error.log*
 # personal scratch / 设计草图等不进 git
 photos/
 audit_out.json
+
+# 内部规划文档 (PRD / Plan) 不入仓 — 含废稿 / 内部决策, 公开仓只放可执行代码 + 用户向 README
+架构笔记/PRD/
+架构笔记/Plan/
+
+# Obsidian (笔记软件) 工作区设置, 跟代码无关
+.obsidian/

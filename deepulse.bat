@@ -1,46 +1,42 @@
 @echo off
 chcp 65001 >nul
-title Claudio Dev Server
+title Deepulse Dev Server
 cd /d "%~dp0"
 
 rem ============================================
 rem  CONFIG -- fork users edit only these lines
 rem    BRAIN: claude / deepseek / ollama / openai
 rem    TTS  : mock / gpt-sovits / voxcpm
+rem  KEY: PRD-002 (2026-06-14) -- one AI_KEY slot for all brands
+rem  Put your real key here, no brand-specific aliases anymore
 rem ============================================
 set "BRAIN=deepseek"
 set "TTS=voxcpm"
+if not defined AI_KEY set "AI_KEY=sk-PUT-YOUR-AI-KEY-HERE"
 
-rem ---- only preset matching brain's key placeholder ----
-if /I "%BRAIN%"=="deepseek" if not defined DEEPSEEK_API_KEY set "DEEPSEEK_API_KEY=sk-PUT-YOUR-DEEPSEEK-KEY-HERE"
-if /I "%BRAIN%"=="openai"   if not defined OPENAI_API_KEY   set "OPENAI_API_KEY=sk-PUT-YOUR-OPENAI-KEY-HERE"
-
-rem ---- wipe stale brain envs before re-injecting (no cross-brand leak) ----
+rem ---- wipe stale brain envs before re-injecting ----
 set "BRAIN_TYPE="
-set "DEEPSEEK_URL="
-set "OLLAMA_URL="
-set "OPENAI_BASE_URL="
-set "OPENAI_MODEL="
+set "AI_URL="
+set "AI_MODEL="
 
-rem ---- per-brain mapping (brand-exclusive URL env, no fallback) ----
+rem ---- per-brain mapping (all share AI_URL + AI_MODEL + AI_KEY) ----
 if /I "%BRAIN%"=="claude" (
     set "BRAIN_TYPE=claude"
 )
 if /I "%BRAIN%"=="deepseek" (
     set "BRAIN_TYPE=deepseek"
-    set "DEEPSEEK_URL=https://api.deepseek.com/v1"
-    set "OPENAI_MODEL=deepseek-chat"
-    set "OPENAI_API_KEY=%DEEPSEEK_API_KEY%"
+    set "AI_URL=https://api.deepseek.com/v1"
+    set "AI_MODEL=deepseek-chat"
 )
 if /I "%BRAIN%"=="ollama" (
     set "BRAIN_TYPE=ollama"
-    set "OLLAMA_URL=http://localhost:11434/v1"
-    set "OPENAI_MODEL=qwen2.5:7b"
+    set "AI_URL=http://localhost:11434/v1"
+    set "AI_MODEL=qwen2.5:7b"
 )
 if /I "%BRAIN%"=="openai" (
     set "BRAIN_TYPE=openai-compat"
-    set "OPENAI_BASE_URL=https://api.openai.com/v1"
-    set "OPENAI_MODEL=gpt-4o-mini"
+    set "AI_URL=https://api.openai.com/v1"
+    set "AI_MODEL=gpt-4o-mini"
 )
 
 rem ---- TTS: wipe stale, then per-tts mapping ----
@@ -80,14 +76,12 @@ if /I "%TTS%"=="voxcpm" (
 )
 
 echo ============================================
-echo   Claudio  -  AI Music Radio
+echo   Deepulse  -  AI Music Radio
 echo --------------------------------------------
 echo   BRAIN_TYPE   = %BRAIN_TYPE%
-echo   DEEPSEEK_URL = %DEEPSEEK_URL%
-echo   OLLAMA_URL   = %OLLAMA_URL%
-echo   OPENAI_URL   = %OPENAI_BASE_URL%
-echo   OPENAI_MODEL = %OPENAI_MODEL%
-echo   OPENAI_KEY   = %OPENAI_API_KEY:~0,8%...
+echo   AI_URL       = %AI_URL%
+echo   AI_MODEL     = %AI_MODEL%
+echo   AI_KEY       = %AI_KEY:~0,8%...
 echo   TTS_TYPE     = %TTS_TYPE%
 echo   VOXCPM_URL   = %VOXCPM_URL%
 echo   VOXCPM_MODEL = %VOXCPM_MODEL%

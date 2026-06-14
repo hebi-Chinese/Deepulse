@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // 歌单曲目 API · 拉某个歌单里的全部歌曲
 
-import { toPlaylistId } from '@claudio/domain'
+import { toPlaylistId } from '@deepulse/domain'
 import { z } from 'zod'
 
 import type { Container } from '../composition.js'

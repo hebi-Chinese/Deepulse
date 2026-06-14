@@ -1,5 +1,5 @@
 {
-  "name": "claudio",
+  "name": "deepulse",
   "version": "0.1.0",
   "private": true,
   "description": "个人 AI 电台 · LLM DJ 大脑 + 网易云音乐 + VoxCPM/SoVITS 语音",
@@ -16,7 +16,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yaml,yml}\"",
-    "arch:check": "pnpm --filter @claudio/arch-test run check",
+    "arch:check": "pnpm --filter @deepulse/arch-test run check",
     "prepare": "husky"
   },
   "devDependencies": {

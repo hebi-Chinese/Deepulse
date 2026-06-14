@@ -19,6 +19,8 @@ export type PlayerActions = {
   readonly removeFromQueue: (id: string) => void
   readonly moveInQueue: (fromId: string, toId: string) => void
   readonly clearQueue: () => void
+  // PRD-008 (2026-06-14): personalized (个性化) 模式 effect 异步拉到 5 首后调用. cap 防 queue 失控
+  readonly appendQueue: (songs: readonly ApiSong[], cap: number) => void
   readonly togglePlay: () => void
   readonly handlePrev: () => void
   readonly handleNext: () => void
@@ -76,6 +78,10 @@ export function usePlayerLogic(): PlayerLogic {
 
   const actions: PlayerActions = { ...queueActions, ...transportActions, ...audioActions }
 
+  // PRD-008 (2026-06-14): personalized (个性化) 模式下监听 currentIndex, 听到最后一首
+  // 时预拉 5 首 append, 实现无缝切换
+  usePersonalizedAutoAppend(state, actions)
+
   return { state, audioRef, currentSong, activeLrcIndex, actions }
 }
 
@@ -89,6 +95,39 @@ function usePersistState(state: PlayerState): void {
   useEffect(() => {
     persist({ queue, mode, volume, muted })
   }, [queue, mode, volume, muted])
+}
+
+// PRD-008 (2026-06-14): personalized (个性化) 模式预拉 5 首 append, 无缝切换
+//   触发: mode=personalized + currentIndex >= queue.length-1
+//   (覆盖 "听最后一首预拉" + "queue 空冷启动" 两 case)
+// 注 deps 只用 primitive (mode / currentIndex / queue.length),
+//   不放 queue 数组本身 (ref 变化太频繁会反复跑)
+const PERSONALIZED_QUEUE_CAP = 150
+function usePersonalizedAutoAppend(state: PlayerState, actions: PlayerActions): void {
+  const { mode, currentIndex, queue } = state
+  const queueLen = queue.length
+  // queue 引用需要给 effect 内部读, 但不进 deps. 用 ref 镜像
+  const queueRef = useRef(queue)
+  queueRef.current = queue
+  useEffect(() => {
+    if (mode !== 'personalized') return
+    if (currentIndex < queueLen - 1) return
+    const excludeIds = queueRef.current.map((s) => s.id)
+    api
+      .personalizedBatch(excludeIds)
+      .then((res) => {
+        if (res.ok && res.songs.length > 0) {
+          actions.appendQueue(res.songs, PERSONALIZED_QUEUE_CAP)
+        } else if (!res.ok) {
+          // 没登录 / 没 snapshot → 设 error, UI 用 error 显示提示
+          actions.setError(`个性化模式: ${res.reason}`)
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('[usePersonalizedAutoAppend] fetch failed:', err)
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- actions 函数 ref 稳定, 不必进 deps
+  }, [mode, currentIndex, queueLen])
 }
 
 function useTrackLoader(currentSong: ApiSong | undefined, setState: SetState): void {
@@ -171,7 +210,13 @@ function useAudioSourceSync(opts: AudioSourceSyncOptions): void {
 
 type QueueActions = Pick<
   PlayerActions,
-  'playSong' | 'queueSong' | 'insertNext' | 'removeFromQueue' | 'moveInQueue' | 'clearQueue'
+  | 'playSong'
+  | 'queueSong'
+  | 'insertNext'
+  | 'removeFromQueue'
+  | 'moveInQueue'
+  | 'clearQueue'
+  | 'appendQueue'
 >
 
 function useQueueActions(setState: SetState): QueueActions {
@@ -208,7 +253,22 @@ function useQueueActions(setState: SetState): QueueActions {
   const clearQueue = useCallback(() => {
     setState((s) => clearQueueKeepCurrent(s))
   }, [setState])
-  return { playSong, queueSong, insertNext, removeFromQueue, moveInQueue, clearQueue }
+  // PRD-008: personalized effect 异步拉到 5 首后调本 action append + cap 裁头
+  const appendQueue = useCallback(
+    (songs: readonly ApiSong[], cap: number) => {
+      setState((s) => appendQueueWithCap(s, songs, cap))
+    },
+    [setState],
+  )
+  return {
+    playSong,
+    queueSong,
+    insertNext,
+    removeFromQueue,
+    moveInQueue,
+    clearQueue,
+    appendQueue,
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -266,7 +326,15 @@ function useTransportActions(audioRef: AudioRef, setState: SetState): TransportA
   )
 
   const cycleMode = useCallback(() => {
-    setState((s) => ({ ...s, mode: nextMode(s.mode) }))
+    setState((s) => {
+      const newMode = nextMode(s.mode)
+      // PRD-007 V3: 切到 shuffle 时一次性 Fisher-Yates 打乱 queue (mutate),
+      // 之后 stepNext 走 order 同款逻辑. 不再每次 next 现场随机.
+      if (newMode === 'shuffle' && s.mode !== 'shuffle') {
+        return shuffleQueueOnce(s)
+      }
+      return { ...s, mode: newMode }
+    })
   }, [setState])
 
   return { togglePlay, handlePrev, handleNext, handleEnded, onSeek, cycleMode }
@@ -397,10 +465,13 @@ function clearQueueKeepCurrent(s: PlayerState): PlayerState {
 function stepNext(s: PlayerState): PlayerState {
   if (s.queue.length === 0) return s
   let next = s.currentIndex + 1
-  if (s.mode === 'shuffle') {
-    next = Math.floor(Math.random() * s.queue.length)
-  } else if (next >= s.queue.length) {
-    next = s.mode === 'loop' ? 0 : -1
+  if (next >= s.queue.length) {
+    // PRD-007 V3: shuffle 切到时一次性打乱 queue, 之后 stepNext 跟 order 同款
+    // PRD-008 V2: personalized 到队尾不动, 让 effect 异步 fetch 5 首再 append
+    //   (effect 会预拉, 但万一 fetch 还没返回就到尾了, 这次 stepNext 暂停)
+    if (s.mode === 'loop') next = 0
+    else if (s.mode === 'personalized') return s
+    else next = -1
   }
   return { ...s, currentIndex: next }
 }
@@ -409,6 +480,65 @@ function stepPrev(s: PlayerState): PlayerState {
   if (s.queue.length === 0) return s
   const prev = s.currentIndex - 1
   return { ...s, currentIndex: prev < 0 ? s.queue.length - 1 : prev }
+}
+
+// PRD-007 V3 (2026-06-14): 切到 shuffle 时一次性 Fisher-Yates 打乱 queue.
+// 把当前在播的歌换到 index 0, 让"当前播放"位置不被切歌打断.
+// 之后 stepNext/stepPrev 跟 order 同款按 index 走.
+function shuffleQueueOnce(s: PlayerState): PlayerState {
+  if (s.queue.length <= 1) return { ...s, mode: 'shuffle' }
+  const currentSong = s.currentIndex >= 0 ? s.queue[s.currentIndex] : undefined
+  const shuffled = fisherYates([...s.queue])
+  if (currentSong === undefined) {
+    return { ...s, mode: 'shuffle', queue: shuffled, currentIndex: -1 }
+  }
+  // 把当前歌换到 index 0, 维持"当前在放"不被切
+  const idxInShuffled = shuffled.findIndex((sg) => sg.id === currentSong.id)
+  if (idxInShuffled > 0) {
+    const tmp = shuffled[0]
+    if (tmp !== undefined) {
+      shuffled[0] = currentSong
+      shuffled[idxInShuffled] = tmp
+    }
+  }
+  return { ...s, mode: 'shuffle', queue: shuffled, currentIndex: 0 }
+}
+
+// Fisher-Yates 洗牌 (in-place, 返回同一引用)
+function fisherYates<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = arr[i] as T
+    arr[i] = arr[j] as T
+    arr[j] = tmp
+  }
+  return arr
+}
+
+// PRD-008 (2026-06-14): append (追加) songs 进 queue + 去重 + 超 cap 裁头.
+//   cold start (冷启动: queue 之前空 currentIndex=-1) → append 完自动定位 0 开始播,
+//   对应用户原话 "没有当前歌, 直接开始随机五首然后往下走".
+function appendQueueWithCap(s: PlayerState, songs: readonly ApiSong[], cap: number): PlayerState {
+  // 去重: songs 跳过 queue 里已有的
+  const existingIds = new Set(s.queue.map((q) => q.id))
+  const fresh = songs.filter((sg) => !existingIds.has(sg.id))
+  if (fresh.length === 0) return s
+  const newQueue = [...s.queue, ...fresh]
+  // 冷启动: queue 之前是空, append 完自动定位 index 0 开始播
+  let newCurrent = s.currentIndex
+  if (s.currentIndex < 0 && newQueue.length > 0) {
+    newCurrent = 0
+  }
+  if (newQueue.length <= cap) {
+    return { ...s, queue: newQueue, currentIndex: newCurrent }
+  }
+  // 超 cap, 裁头 (老的删, currentIndex 跟着减保持指向同一首歌)
+  const trim = newQueue.length - cap
+  return {
+    ...s,
+    queue: newQueue.slice(trim),
+    currentIndex: Math.max(0, newCurrent - trim),
+  }
 }
 
 function nextMode(current: PlayMode): PlayMode {

@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 import { INITIAL_STATE, type PlayerState } from './types'
 
-const STORAGE_KEY = 'claudio.player.v1'
+const STORAGE_KEY = 'deepulse.player.v1'
 
 const apiArtistSchema = z.object({ id: z.string(), name: z.string() })
 const apiAlbumSchema = z.object({ id: z.string(), name: z.string() })
@@ -21,7 +21,7 @@ const apiSongSchema = z.object({
 })
 const persistedSchema = z.object({
   queue: z.array(apiSongSchema),
-  mode: z.enum(['order', 'loop', 'single', 'shuffle']),
+  mode: z.enum(['order', 'loop', 'single', 'shuffle', 'personalized']),
   volume: z.number().min(0).max(1),
   muted: z.boolean(),
 })

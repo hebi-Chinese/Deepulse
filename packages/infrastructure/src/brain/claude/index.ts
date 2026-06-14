@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { TextDecoder } from 'node:util'
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { execa } from 'execa'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
@@ -19,7 +19,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 import { splitMessages } from './prompt.js'
 import { parseStreamLine } from './stream-parser.js'
 
-import type { IBrain, BrainMessage, BrainGenerateOptions } from '@claudio/application'
+import type { IBrain, BrainMessage, BrainGenerateOptions } from '@deepulse/application'
 
 // 故意不约束 spawn() 返回类型,让 TS 直接推 execa 的具体 Result 形状,
 // 避免 exactOptionalPropertyTypes 把通用 Options 和具体调用打架
@@ -168,7 +168,7 @@ type PreparedSpawn = {
 }
 
 async function writeTempPromptFile(tag: string, content: string): Promise<string> {
-  const path = join(tmpdir(), `claudio-brain-${tag}-${randomUUID()}.txt`)
+  const path = join(tmpdir(), `deepulse-brain-${tag}-${randomUUID()}.txt`)
   await writeFile(path, content, 'utf-8')
   return path
 }
@@ -193,7 +193,7 @@ async function* readTextDeltas(child: WithStdout): AsyncIterable<string> {
   }
 
   // 共享一个 TextDecoder + stream:true,跨 chunk 的 UTF-8 多字节序列才不会被切断
-  // (流萤声线播报全中文,Claude 流式输出极易在中文字符中间断 chunk)
+  // (DJ 中文流式输出极易在中文字符中间断 chunk)
   const decoder = new TextDecoder('utf-8')
   let buffer = ''
   for await (const chunk of stdout) {

@@ -1,7 +1,7 @@
 'use client'
 
 // useDjWs · 浏览器侧 DJ 流式对话 WS 客户端
-// 与后端 /api/dj/chat-ws 一一对应 (协议见 @claudio/shared/dj-ws)
+// 与后端 /api/dj/chat-ws 一一对应 (协议见 @deepulse/shared/dj-ws)
 //
 // 设计要点:
 //   - 单连接,组件 mount 时 open,unmount 时 close
@@ -10,14 +10,14 @@
 //   - 收 audio 事件就 enqueue (HTMLAudioElement, 顺序播放,不抢)
 //   - sendUserMsg 失败 (未连接) 返回 false,UI 据此提示
 
-import { wsServerMsgSchema } from '@claudio/shared/dj-ws'
+import { wsServerMsgSchema } from '@deepulse/shared/dj-ws'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { duckMusic, restoreMusic } from '../components/player/sharedAudioCtx'
 
 import { env } from './env'
 
-import type { DjContext, WsClientMsg, WsServerMsg, DjActionKind } from '@claudio/shared/dj-ws'
+import type { DjContext, WsClientMsg, WsServerMsg, DjActionKind } from '@deepulse/shared/dj-ws'
 
 const MAX_RECONNECT_ATTEMPTS = 8
 const RECONNECT_BASE_MS = 500

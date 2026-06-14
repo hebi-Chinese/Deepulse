@@ -15,7 +15,7 @@ import { api, type ApiSong } from '../../lib/api'
 import { useDjWs, type DjAction, type DjStreamingMessage } from '../../lib/dj-ws-client'
 
 import type { LanguageHook } from '../settings/useLanguage'
-import type { DjContext } from '@claudio/shared/dj-ws'
+import type { DjContext } from '@deepulse/shared/dj-ws'
 
 type Props = {
   readonly open: boolean

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { DICTS, LANGUAGES, type LangKey, type Language } from '../../lib/i18n'
 
-const STORAGE_KEY = 'claudio.lang'
+const STORAGE_KEY = 'deepulse.lang'
 
 export type LanguageHook = {
   readonly lang: Language

@@ -1,6 +1,6 @@
 // DB 入口 · 导出 client + repos 工厂
-// 注: repo 接口和 DTO 类型现在统一在 @claudio/application 暴露 (Clean Arch port 在 application)
-// 这里只导出 *factory function* — 想要 IXxxRepo 请 import from '@claudio/application'
+// 注: repo 接口和 DTO 类型现在统一在 @deepulse/application 暴露 (Clean Arch port 在 application)
+// 这里只导出 *factory function* — 想要 IXxxRepo 请 import from '@deepulse/application'
 
 export * from './client.js'
 export * from './schema.js'

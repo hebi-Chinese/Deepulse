@@ -1,4 +1,4 @@
-// Claudio 架构约束（PRD §5.3 + CODING_STANDARDS_NODE_TS §5.2）
+// Deepulse 架构约束（PRD §5.3 + CODING_STANDARDS_NODE_TS §5.2）
 // 依赖方向：apps → application → domain；infrastructure 实现 application 的 ports
 // 兄弟 adapter 禁止互相 import；pwa 禁止触 server 内部；ui 不依赖业务
 

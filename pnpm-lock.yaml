@@ -149,7 +149,7 @@ importers:
 
   apps/pwa:
     dependencies:
-      '@claudio/shared':
+      '@deepulse/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       music-metadata:
@@ -168,7 +168,7 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       '@types/node':
@@ -201,16 +201,16 @@ importers:
 
   apps/server:
     dependencies:
-      '@claudio/application':
+      '@deepulse/application':
         specifier: workspace:*
         version: link:../../packages/application
-      '@claudio/domain':
+      '@deepulse/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@claudio/infrastructure':
+      '@deepulse/infrastructure':
         specifier: workspace:*
         version: link:../../packages/infrastructure
-      '@claudio/shared':
+      '@deepulse/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@fastify/cors':
@@ -235,7 +235,7 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       '@types/node':
@@ -262,17 +262,17 @@ importers:
 
   packages/application:
     dependencies:
-      '@claudio/domain':
+      '@deepulse/domain':
         specifier: workspace:*
         version: link:../domain
-      '@claudio/shared':
+      '@deepulse/shared':
         specifier: workspace:*
         version: link:../shared
       zod:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       '@types/node':
@@ -290,7 +290,7 @@ importers:
 
   packages/domain:
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       eslint:
@@ -305,13 +305,13 @@ importers:
 
   packages/infrastructure:
     dependencies:
-      '@claudio/application':
+      '@deepulse/application':
         specifier: workspace:*
         version: link:../application
-      '@claudio/domain':
+      '@deepulse/domain':
         specifier: workspace:*
         version: link:../domain
-      '@claudio/shared':
+      '@deepulse/shared':
         specifier: workspace:*
         version: link:../shared
       NeteaseCloudMusicApi:
@@ -339,7 +339,7 @@ importers:
         specifier: 'catalog:'
         version: 3.25.2(zod@3.25.76)
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       '@types/better-sqlite3':
@@ -370,7 +370,7 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
-      '@claudio/configs':
+      '@deepulse/configs':
         specifier: workspace:*
         version: link:../../tools/configs
       '@types/node':

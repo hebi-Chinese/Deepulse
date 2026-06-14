@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // 网易云扫码登录 API · route 层只做 HTTP framing, 编排在 completeQrLogin use case
 
-import { completeQrLogin, type UseCaseLogger } from '@claudio/application'
+import { completeQrLogin, type UseCaseLogger } from '@deepulse/application'
 import { z } from 'zod'
 
 import type { Container } from '../composition.js'

@@ -1,12 +1,9 @@
 {
-  "extends": "@claudio/configs/tsconfig.node.json",
+  "extends": "@deepulse/configs/tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "../domain" },
-    { "path": "../shared" }
-  ]
+  "references": [{ "path": "../domain" }, { "path": "../shared" }]
 }

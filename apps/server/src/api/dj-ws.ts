@@ -8,11 +8,11 @@
 //   - 任何阶段错误都包成 'error' 事件发给客户端, WS 不立刻关
 //   - turn slot immutable swap, 不在原对象 mutate
 
-import { runDjTurn, type DjTurnEvent, type UseCaseLogger } from '@claudio/application'
-import { wsClientMsgSchema } from '@claudio/shared/dj-ws'
+import { runDjTurn, type DjTurnEvent, type UseCaseLogger } from '@deepulse/application'
+import { wsClientMsgSchema } from '@deepulse/shared/dj-ws'
 
 import type { Container } from '../composition.js'
-import type { WsClientMsg, WsServerMsg } from '@claudio/shared/dj-ws'
+import type { WsClientMsg, WsServerMsg } from '@deepulse/shared/dj-ws'
 import type { WebSocket } from '@fastify/websocket'
 import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify'
 

@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // 歌曲直链 + 歌词 API
 
-import { toSongId } from '@claudio/domain'
+import { toSongId } from '@deepulse/domain'
 import { z } from 'zod'
-
 
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'
-
 
 const idParams = z.object({ id: z.string().min(1) })
 const urlQuery = z.object({

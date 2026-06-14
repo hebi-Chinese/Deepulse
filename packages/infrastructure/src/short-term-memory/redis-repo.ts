@@ -1,21 +1,21 @@
 // Redis 版短期记忆 — 跨进程持久, TTL 走 Redis EXPIRE
 //
 // Key 设计 (单用户应用, 没分租户):
-//   claudio:mem:active     STRING  "1"     TTL = idle timeout (每次 appendTurn 重置)
-//   claudio:mem:session    LIST    JSON[]  no TTL (current session turns)
+//   deepulse:mem:active     STRING  "1"     TTL = idle timeout (每次 appendTurn 重置)
+//   deepulse:mem:session    LIST    JSON[]  no TTL (current session turns)
 //
-// 活跃判定: EXISTS claudio:mem:active.
+// 活跃判定: EXISTS deepulse:mem:active.
 // session 边界: active key 过期 → isSessionActive=false, 但 session list 还在
 // → 调用方 (use-case) 拉出来 distill → 清掉 list → 下次 appendTurn 起新 session.
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { z } from 'zod'
 
-import type { IShortTermMemoryRepo, SessionTurn } from '@claudio/application'
+import type { IShortTermMemoryRepo, SessionTurn } from '@deepulse/application'
 import type { Redis } from 'ioredis'
 
-const ACTIVE_KEY = 'claudio:mem:active'
-const SESSION_KEY = 'claudio:mem:session'
+const ACTIVE_KEY = 'deepulse:mem:active'
+const SESSION_KEY = 'deepulse:mem:session'
 
 // Redis 里 JSON.stringify 存的 SessionTurn 是 untrusted bytes — schema 漂移/外部写入会
 // 静默把坏数据喂进 prompt. zod 校验抛 → 让 wrap 包成 ExternalServiceError 上层看到.

@@ -1,5 +1,5 @@
 {
-  "extends": "@claudio/configs/tsconfig.node.json",
+  "extends": "@deepulse/configs/tsconfig.node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

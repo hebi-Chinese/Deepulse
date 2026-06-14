@@ -142,3 +142,9 @@ export const qrCheckBodySchema = z.object({
 
 // like / fmTrash 这类只关心 status,body 不读
 export const genericBodySchema = z.unknown()
+
+// song/detail 批量接口 body shape (PRD-005: cold-start hydrate)
+// 顶层 { songs: RawSong[], privileges: ... }, 只关心 songs
+export const songDetailBodySchema = z.object({
+  songs: z.array(rawSongSchema).optional(),
+})

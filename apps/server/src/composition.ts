@@ -4,8 +4,8 @@
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { createBrain } from '@claudio/infrastructure/brain'
-import { createSystemClock } from '@claudio/infrastructure/clock'
+import { createBrain } from '@deepulse/infrastructure/brain'
+import { createSystemClock } from '@deepulse/infrastructure/clock'
 // 注: migration path 不再在这里写死, 默认 createDb 用 infra bundled migrations
 //    composition root 只在用户显式传 env.MIGRATIONS_DIR 时覆盖
 import {
@@ -16,12 +16,12 @@ import {
   createPlaysRepo,
   createSongRepo,
   type DbClient,
-} from '@claudio/infrastructure/db'
-import { createFilesystemLongTermRepo } from '@claudio/infrastructure/long-term-memory'
-import { NcmClient } from '@claudio/infrastructure/ncm'
-import { createShortTermMemoryRepo } from '@claudio/infrastructure/short-term-memory'
-import { createTts } from '@claudio/infrastructure/tts'
-import { createFilesystemUserPrefsRepo } from '@claudio/infrastructure/user-prefs'
+} from '@deepulse/infrastructure/db'
+import { createFilesystemLongTermRepo } from '@deepulse/infrastructure/long-term-memory'
+import { NcmClient } from '@deepulse/infrastructure/ncm'
+import { createShortTermMemoryRepo } from '@deepulse/infrastructure/short-term-memory'
+import { createTts } from '@deepulse/infrastructure/tts'
+import { createFilesystemUserPrefsRepo } from '@deepulse/infrastructure/user-prefs'
 
 import type {
   IBrain,
@@ -36,8 +36,8 @@ import type {
   ISongRepo,
   ITtsClient,
   IUserPrefsRepo,
-} from '@claudio/application'
-import type { Env } from '@claudio/shared'
+} from '@deepulse/application'
+import type { Env } from '@deepulse/shared'
 
 export type Container = {
   readonly env: Env
@@ -79,11 +79,9 @@ export function buildContainer(env: Env): Container {
   return {
     env,
     brain: createBrain(env.BRAIN_TYPE, {
-      deepseekUrl: env.DEEPSEEK_URL,
-      ollamaUrl: env.OLLAMA_URL,
-      openaiBaseUrl: env.OPENAI_BASE_URL,
-      openaiApiKey: env.OPENAI_API_KEY,
-      openaiModel: env.OPENAI_MODEL,
+      aiUrl: env.AI_URL,
+      aiKey: env.AI_KEY,
+      aiModel: env.AI_MODEL,
     }),
     tts: createTts(env.TTS_TYPE, {
       ttsUrl: env.TTS_URL,

@@ -1,4 +1,4 @@
-// 前端 env 集中校验 · 与后端 @claudio/shared/config 同样的设计原则
+// 前端 env 集中校验 · 与后端 @deepulse/shared/config 同样的设计原则
 // Next.js 公开 env 必须 NEXT_PUBLIC_ 前缀,build 时内联,所以这里只能直接读 process.env
 // 但读完一次后,业务代码只能从这里 import,不准散落 process.env
 

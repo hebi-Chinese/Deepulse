@@ -1,21 +1,22 @@
 # TTS Adapters
 
-实现 `ITtsClient` 接口 (在 `@claudio/application/ports/tts`). 唯一方法 `synthesize({text, emotion}) → {audioUrl}`.
+实现 `ITtsClient` 接口 (在 `@deepulse/application/ports/tts`). 唯一方法 `synthesize({text, emotion}) → {audioUrl}`.
 
 ## 已实现
 
 | Type 枚举    | 适配器                          | 用途                                                                |
 | ------------ | ------------------------------- | ------------------------------------------------------------------- |
 | `mock`       | `mock/MockTtsClient`            | **默认**, 返回 1 秒静音 wav (data URI), fork 者跑全链路不报错       |
-| `gpt-sovits` | `gpt-sovits/GptSovitsTtsClient` | 用户本地: HTTP POST GPT-SoVITS `:8000/infer_single`, 流萤声线模型   |
+| `gpt-sovits` | `gpt-sovits/GptSovitsTtsClient` | 用户本地: HTTP POST GPT-SoVITS `:8000/infer_single` (中文专用)      |
 | `voxcpm`     | `voxcpm/VoxCpmTtsClient`        | OpenBMB VoxCPM2: HTTP POST `:8001/synthesize`, 30 语言 voice design |
 
 `voxcpm` 配套 Python wrapper 在 `tools/voxcpm-server/` (见那里的 README).
 
 ## emotion 怎么传
 
-`ITtsClient.synthesize({text, emotion})` 的 `emotion` 是 Claudio 内部 5 选 1
-枚举 (开心/难过/生气/中立/害羞).
+`ITtsClient.synthesize({text, emotion})` 的 `emotion` 是 Deepulse 内部 2 选 1
+枚举 (中立/开心). 产品决策: 只做正面+中性, 不做负面 (恐惧/难过/生气) — 电台
+主播口吻不该把负面情绪传给用户.
 
 - `gpt-sovits` 原生有 emotion 字段, 直传
 - `voxcpm` 没有 emotion, adapter 把 emotion 翻成中文 hint 拼到 `voice_design`

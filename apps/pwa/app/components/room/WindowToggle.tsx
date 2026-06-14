@@ -14,10 +14,10 @@ type Props = {
   readonly language: LanguageHook
   readonly onEnter: () => void
   readonly onExit: () => void
-  readonly enterDisabled?: boolean
 }
 
-export function WindowToggle({ mode, language, onEnter, onExit, enterDisabled }: Props) {
+// PRD-006 (2026-06-14): 永远可点 — 没歌也能进 Listen 纯欣赏场景. enterDisabled prop 已删
+export function WindowToggle({ mode, language, onEnter, onExit }: Props) {
   const { t } = language
   const isListen = mode === 'listen'
   const label = isListen ? `⊘  ${t('openWindow')}` : `${t('closeWindow')}  ↘`
@@ -25,8 +25,7 @@ export function WindowToggle({ mode, language, onEnter, onExit, enterDisabled }:
     <button
       type="button"
       onClick={isListen ? onExit : onEnter}
-      disabled={!isListen && enterDisabled === true}
-      className="fixed bottom-6 left-6 z-50 px-4 py-2 rounded-full text-xs tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+      className="fixed bottom-6 left-6 z-50 px-4 py-2 rounded-full text-xs tracking-widest transition-all"
       style={{
         fontFamily: '"Source Han Serif SC", "Songti SC", "Noto Serif SC", serif',
         background: 'oklch(95% 0 0 / 0.08)',

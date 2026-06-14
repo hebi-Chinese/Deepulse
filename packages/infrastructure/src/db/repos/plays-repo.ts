@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/require-await -- better-sqlite3 is sync */
 // PlaysRepo · 听歌历史
 
-import { toSongId } from '@claudio/domain'
+import { toSongId } from '@deepulse/domain'
 import { and, count, desc, eq, gte } from 'drizzle-orm'
-
 
 import { plays } from '../schema.js'
 
 import type { DbClient } from '../client.js'
-import type { IPlaysRepo, PlayRecord } from '@claudio/application'
-import type { SongId } from '@claudio/domain'
+import type { IPlaysRepo, PlayRecord } from '@deepulse/application'
+import type { SongId } from '@deepulse/domain'
 
 export function createPlaysRepo(client: DbClient): IPlaysRepo {
   return {
@@ -26,12 +25,7 @@ export function createPlaysRepo(client: DbClient): IPlaysRepo {
     },
 
     async recentPlays(limit: number): Promise<readonly PlayRecord[]> {
-      const rows = client.db
-        .select()
-        .from(plays)
-        .orderBy(desc(plays.playedAtMs))
-        .limit(limit)
-        .all()
+      const rows = client.db.select().from(plays).orderBy(desc(plays.playedAtMs)).limit(limit).all()
       return rows.map((r) => ({
         songId: toSongId(r.songId),
         playedAtMs: r.playedAtMs,

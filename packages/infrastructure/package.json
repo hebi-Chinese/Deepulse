@@ -1,5 +1,5 @@
 {
-  "name": "@claudio/infrastructure",
+  "name": "@deepulse/infrastructure",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -29,9 +29,9 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@claudio/application": "workspace:*",
-    "@claudio/domain": "workspace:*",
-    "@claudio/shared": "workspace:*",
+    "@deepulse/application": "workspace:*",
+    "@deepulse/domain": "workspace:*",
+    "@deepulse/shared": "workspace:*",
     "NeteaseCloudMusicApi": "catalog:",
     "better-sqlite3": "catalog:",
     "drizzle-orm": "catalog:",
@@ -42,7 +42,7 @@
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
-    "@claudio/configs": "workspace:*",
+    "@deepulse/configs": "workspace:*",
     "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",

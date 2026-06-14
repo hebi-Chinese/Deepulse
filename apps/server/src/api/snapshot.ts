@@ -2,7 +2,7 @@
 // Snapshot API: 看快照状态 / 拉新快照
 // 编排走 refreshUserSnapshot use case, route 层只做 HTTP framing
 
-import { refreshUserSnapshot } from '@claudio/application'
+import { refreshUserSnapshot } from '@deepulse/application'
 
 import type { Container } from '../composition.js'
 import type { FastifyPluginAsync } from 'fastify'

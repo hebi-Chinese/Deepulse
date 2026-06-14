@@ -1,14 +1,14 @@
-# Claudio · 给 AI 助手的 setup 引导
+# Deepulse · 给 AI 助手的 setup 引导
 
 > 本文件给 AI 助手 (Claude Code / Cursor / Copilot Chat / 其他) 读. 当你 fork 了这个项目, AI 助手会一进来就读到这份引导, 帮你 / 用户完成首次设置.
 
 ## 项目一句话
 
-**Claudio** = 个人 AI 电台 PWA. 浏览器开 `localhost:3000`, AI DJ (LLM) 给你聊天 + 选歌, 网易云负责音源, 流式 TTS 把 DJ 的话变成声音. Clean Architecture 的 pnpm monorepo: `domain` / `application` / `infrastructure` / `shared` + `apps/pwa` (Next.js) + `apps/server` (Fastify).
+**Deepulse** = 个人 AI 电台 PWA. 浏览器开 `localhost:3000`, AI DJ (LLM) 给你聊天 + 选歌, 网易云负责音源, 流式 TTS 把 DJ 的话变成声音. Clean Architecture 的 pnpm monorepo: `domain` / `application` / `infrastructure` / `shared` + `apps/pwa` (Next.js) + `apps/server` (Fastify).
 
 ## 一启动就跑得起来 — Mock 默认
 
-**只想看 UI** 的话: 双击 `claudio.bat` (或 `pnpm dev`), 不发 DJ chat 就行, 搜歌/挑歌都能用.
+**只想看 UI** 的话: 双击 `deepulse.bat` (或 `pnpm dev`), 不发 DJ chat 就行, 搜歌/挑歌都能用.
 
 **要 DJ chat 能回话** 必须配 brain (见必选 1) — 没配会 throw `BRAIN_TYPE=X 必须 set X_URL env`, 这是故意的不静默走错地方.
 
@@ -45,9 +45,9 @@ set BRAIN_TYPE=claude
 
 ```bat
 set BRAIN_TYPE=deepseek
-set DEEPSEEK_URL=https://api.deepseek.com/v1
-set OPENAI_API_KEY=sk-your-key
-set OPENAI_MODEL=deepseek-chat
+set AI_URL=https://api.deepseek.com/v1
+set AI_KEY=sk-your-key
+set AI_MODEL=deepseek-chat
 ```
 
 #### Ollama 本地
@@ -56,17 +56,20 @@ set OPENAI_MODEL=deepseek-chat
 
 ```bat
 set BRAIN_TYPE=ollama
-set OLLAMA_URL=http://localhost:11434/v1
-set OPENAI_MODEL=qwen2.5:7b
+set AI_URL=http://localhost:11434/v1
+set AI_KEY=fake-ollama-key
+set AI_MODEL=qwen2.5:7b
 ```
+
+(Ollama 不验 key, 但 AI_KEY 不能为空)
 
 #### OpenAI 官方
 
 ```bat
 set BRAIN_TYPE=openai-compat
-set OPENAI_BASE_URL=https://api.openai.com/v1
-set OPENAI_API_KEY=sk-proj-your-key
-set OPENAI_MODEL=gpt-4o-mini
+set AI_URL=https://api.openai.com/v1
+set AI_KEY=sk-proj-your-key
+set AI_MODEL=gpt-4o-mini
 ```
 
 #### 任意 OpenAI 兼容
@@ -75,27 +78,27 @@ set OPENAI_MODEL=gpt-4o-mini
 
 ```bat
 set BRAIN_TYPE=openai-compat
-set OPENAI_BASE_URL=https://your-provider/v1
-set OPENAI_API_KEY=your-key
-set OPENAI_MODEL=model-id-on-that-provider
+set AI_URL=https://your-provider/v1
+set AI_KEY=your-key
+set AI_MODEL=model-id-on-that-provider
 ```
 
 #### Custom
 
 fork 者自己接私有 LLM, 在 `apps/server/src/composition.ts` 的 `createBrain(...)` 调用里加 `customResolver: () => '<url>'`, 不走 env, 详见 brain README.
 
-⚠ **专属性是硬约束**: `BRAIN_TYPE=deepseek` 时只读 `DEEPSEEK_URL`, `OPENAI_BASE_URL` 也不会被偷偷用上来兜底. 反之亦然. 这是为了用户在 shell 里有残留 `OPENAI_BASE_URL=""` 这种 case 不会跨 brand 串味.
+⚠ **AI_URL + AI_KEY + AI_MODEL 是通用三孔** (PRD-002, 2026-06-14 简化): 所有 brand 共用同一对 env, BRAIN_TYPE 决定走哪条代码路径. 换 brand 只改这四件, 不再有 brand 专属 URL 孔.
 
 ### 最简 fork 配置
 
-用户用 deepseek 的话, 改 `claudio.bat` 顶部:
+用户用 deepseek 的话, 改 `deepulse.bat` 顶部:
 
 ```bat
 set "BRAIN=deepseek"
-set "DEEPSEEK_API_KEY=sk-your-key"
+set "AI_KEY=sk-your-key"
 ```
 
-`claudio.bat` 里 BRAIN=deepseek case 会自动 set `DEEPSEEK_URL=https://api.deepseek.com/v1` + `OPENAI_API_KEY=%DEEPSEEK_API_KEY%` + `OPENAI_MODEL=deepseek-chat`, 用户只关心两件 (BRAIN 跟自己的 key).
+`deepulse.bat` 里 BRAIN=deepseek case 会自动 set `AI_URL=https://api.deepseek.com/v1` + `AI_MODEL=deepseek-chat`, 用户只关心两件 (BRAIN 跟自己的 key).
 
 详细文档 [packages/infrastructure/src/brain/README.md](packages/infrastructure/src/brain/README.md)
 
@@ -113,7 +116,7 @@ set "DEEPSEEK_API_KEY=sk-your-key"
 
 #### gpt-sovits
 
-用户本地, 流萤声线 (用户定制模型), 需起 GPT-SoVITS server :8000.
+用户本地 (中文专用, fork 者自带模型), 需起 GPT-SoVITS server :8000.
 
 ```bat
 set TTS_TYPE=gpt-sovits
@@ -143,7 +146,7 @@ set VOXCPM_VOICE_DESIGN=温柔女声, 25 岁, 中性情绪
    pip install -r requirements.txt
    ```
 
-2. **日常用**: `claudio.bat` 顶部 `set "TTS=voxcpm"`. 双击 bat — 它会自动
+2. **日常用**: `deepulse.bat` 顶部 `set "TTS=voxcpm"`. 双击 bat — 它会自动
    `start` 一个新窗跑 `python app.py` (8001 已在跑就跳过). 用户不用另开窗.
 
 首次启动 vox 加载模型 ~30s, 这段时间 DJ 喊话会等; 后续秒回.
@@ -166,7 +169,7 @@ set VOXCPM_VOICE_DESIGN=温柔女声, 25 岁, 中性情绪
 | ---------------- | ----------------------------------------- | ----------------------------- |
 | `SERVER_PORT`    | Fastify 后端端口                          | `8787`                        |
 | `PWA_PORT`       | Next.js 前端端口                          | `3000`                        |
-| `DATABASE_URL`   | SQLite 文件路径                           | `./data/claudio.db`           |
+| `DATABASE_URL`   | SQLite 文件路径                           | `./data/deepulse.db`          |
 | `USER_PREFS_DIR` | 用户手写的 prefs markdown 目录            | `apps/server/data/user-prefs` |
 | `MIGRATIONS_DIR` | drizzle migrations 路径 (prod build 必给) | infra 自带                    |
 
@@ -185,7 +188,7 @@ packages/
   shared/         Config (env), WS protocol schema, errors
 tools/
   blender/      场景图原料 (.blend)
-claudio.bat        Windows 双击启动 (pnpm dev 包装)
+deepulse.bat        Windows 双击启动 (pnpm dev 包装)
 ```
 
 **Clean Architecture 单向依赖**: `apps → infrastructure → application → domain`. 加新 adapter 在 `infrastructure/<port>/<name>/`, 不要在 `apps` 直接 new 具体类.
@@ -204,7 +207,7 @@ claudio.bat        Windows 双击启动 (pnpm dev 包装)
 
 修改后请跑:
 
-- `pnpm -F @claudio/<pkg> typecheck` 单包
+- `pnpm -F @deepulse/<pkg> typecheck` 单包
 - `pnpm typecheck` 全仓 (慢但稳)
 - `pnpm lint` 必绿
 - 涉及 UI: 别只说"应该能行", 用 `agent-browser-cli` 实测一遍
@@ -213,11 +216,11 @@ claudio.bat        Windows 双击启动 (pnpm dev 包装)
 
 ## Stuck 怎么办
 
-| 症状                                                      | 第一步                                                                                                                                                            |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 前端报 `Failed to fetch`                                  | `curl --noproxy "*" http://127.0.0.1:8787/api/login/status` — 200 = 前端问题, refused = 后端死了重起                                                              |
-| 端口被占 EADDRINUSE                                       | `netstat -ano \| findstr ":3000"` 找 PID, `Stop-Process -Id <pid> -Force`                                                                                         |
-| dev server hang                                           | 杀 node 进程 + 走根目录 `pnpm dev` 重起 (并行启 pwa + server)                                                                                                     |
-| `pnpm dev` 起不来                                         | `pnpm install` 看是否依赖装全; 看 `package.json` engines `node >= 20`                                                                                             |
-| DJ chat 显示 `[出错: BRAIN_TYPE=X 必须 set X_URL env]`    | 用户/fork 者没 set 对应的 brand 专属 URL env (e.g. `BRAIN_TYPE=deepseek` 必须 set `DEEPSEEK_URL`). 设计是故意硬抛, 对照"必选 1"补 set. 不预填任何 default URL.    |
-| server log `brainType: openai-compat` 但你以为是 deepseek | env 没传到 server 进程. 看 `claudio.bat` 窗里 echo 的 `BRAIN_TYPE` 跟 server log 对照. 不一致 → bat 没运行到那段; 一致但 server 拿不到 → 检查 cmd → pnpm 中间环节 |
+| 症状                                                      | 第一步                                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 前端报 `Failed to fetch`                                  | `curl --noproxy "*" http://127.0.0.1:8787/api/login/status` — 200 = 前端问题, refused = 后端死了重起                                                               |
+| 端口被占 EADDRINUSE                                       | `netstat -ano \| findstr ":3000"` 找 PID, `Stop-Process -Id <pid> -Force`                                                                                          |
+| dev server hang                                           | 杀 node 进程 + 走根目录 `pnpm dev` 重起 (并行启 pwa + server)                                                                                                      |
+| `pnpm dev` 起不来                                         | `pnpm install` 看是否依赖装全; 看 `package.json` engines `node >= 20`                                                                                              |
+| DJ chat 显示 `[出错: BRAIN_TYPE=X 必须 set AI_URL env]`   | `AI_URL` 没 set. 设计故意硬抛, 对照"必选 1"补 set. PRD-002 简化后所有 brand 共用 `AI_URL` 不再有 brand 专属孔.                                                     |
+| server log `brainType: openai-compat` 但你以为是 deepseek | env 没传到 server 进程. 看 `deepulse.bat` 窗里 echo 的 `BRAIN_TYPE` 跟 server log 对照. 不一致 → bat 没运行到那段; 一致但 server 拿不到 → 检查 cmd → pnpm 中间环节 |

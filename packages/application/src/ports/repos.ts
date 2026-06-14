@@ -3,7 +3,7 @@
 // Clean Arch: 接口必须在 application 层,不能让 infra 反向声明接口让 application 依赖
 
 import type { NcmUserSnapshot } from './ncm.js'
-import type { Song, SongId } from '@claudio/domain'
+import type { Song, SongId } from '@deepulse/domain'
 
 export type PlaySource = 'plan' | 'fm' | 'manual' | 'recommendation' | 'search'
 

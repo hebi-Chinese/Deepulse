@@ -3,50 +3,46 @@ import { z } from 'zod'
 
 import { createBrain } from './index.js'
 
-// 用户哲学 (2026-06-07): URL 一层, brand 专属 env, 没填就 throw — 不静默走错地方
-// brain factory 构造时不 throw (lazy), 第一次 fetch 时 resolver throw, 错误信息直接告诉
-// 用户该 set 哪个 env
+// PRD-002 (2026-06-XX): AI_URL + AI_KEY + AI_MODEL 通用三孔
+// brain factory 构造时不 throw (lazy), 第一次 fetch 时 resolver throw, 错误信息直接
+// 告诉用户该 set 哪个 env (AI_URL)
 
 const baseCfg = {
-  openaiApiKey: 'sk-test',
-  openaiModel: 'whatever',
-  deepseekUrl: undefined,
-  ollamaUrl: undefined,
-  openaiBaseUrl: undefined,
+  aiUrl: undefined,
+  aiKey: 'sk-test',
+  aiModel: 'whatever',
 }
 
 // 通用 stub schema — generateJson 调用 resolver 时同步 throw, 不会真到 schema 这一步
 const stubSchema = z.object({ x: z.string() })
 
-describe('createBrain — URL 强制专属 env', () => {
-  it('BRAIN_TYPE=deepseek 没 set DEEPSEEK_URL → 调用时 throw (不静默走 openai)', async () => {
+describe('createBrain — AI_URL 通用孔位', () => {
+  it('BRAIN_TYPE=deepseek 没 set AI_URL → 调用时 throw (不静默走错)', async () => {
     const brain = createBrain('deepseek', baseCfg)
     expect(brain).toBeDefined()
     await expect(brain.generateJson([{ role: 'user', content: 'hi' }], stubSchema)).rejects.toThrow(
-      /BRAIN_TYPE=deepseek.*DEEPSEEK_URL/,
+      /BRAIN_TYPE=deepseek.*AI_URL/,
     )
   })
 
-  it('BRAIN_TYPE=ollama 没 set OLLAMA_URL → throw', async () => {
+  it('BRAIN_TYPE=ollama 没 set AI_URL → throw', async () => {
     const brain = createBrain('ollama', baseCfg)
     await expect(brain.generateJson([{ role: 'user', content: 'hi' }], stubSchema)).rejects.toThrow(
-      /BRAIN_TYPE=ollama.*OLLAMA_URL/,
+      /BRAIN_TYPE=ollama.*AI_URL/,
     )
   })
 
-  it('BRAIN_TYPE=openai-compat 没 set OPENAI_BASE_URL → throw', async () => {
+  it('BRAIN_TYPE=openai-compat 没 set AI_URL → throw', async () => {
     const brain = createBrain('openai-compat', baseCfg)
     await expect(brain.generateJson([{ role: 'user', content: 'hi' }], stubSchema)).rejects.toThrow(
-      /BRAIN_TYPE=openai-compat.*OPENAI_BASE_URL/,
+      /BRAIN_TYPE=openai-compat.*AI_URL/,
     )
   })
 
-  it('BRAIN_TYPE=deepseek + DEEPSEEK_URL 填了 → 构造成功 (URL 独占在 deepseek 这一层)', () => {
+  it('BRAIN_TYPE=deepseek + AI_URL 填了 → 构造成功', () => {
     const brain = createBrain('deepseek', {
       ...baseCfg,
-      deepseekUrl: 'https://api.deepseek.com/v1',
-      // 故意把 openaiBaseUrl 填别的, 验证 deepseek case 不读它
-      openaiBaseUrl: 'https://wrong.example.com/v1',
+      aiUrl: 'https://api.deepseek.com/v1',
     })
     expect(brain).toBeDefined()
   })

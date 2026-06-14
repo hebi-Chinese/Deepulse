@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await -- Fastify plugin signature is async */
 // Plays API · 听歌历史
-import { toSongId } from '@claudio/domain'
+import { toSongId } from '@deepulse/domain'
 import { z } from 'zod'
 
 import type { Container } from '../composition.js'

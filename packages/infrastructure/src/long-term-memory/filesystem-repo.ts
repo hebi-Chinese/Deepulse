@@ -5,7 +5,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import type { ILongTermMemoryRepo, LongTermEntry } from '@claudio/application'
+import type { ILongTermMemoryRepo, LongTermEntry } from '@deepulse/application'
 
 const ENTRY_LINE_RE = /^- \[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] (.+)$/
 

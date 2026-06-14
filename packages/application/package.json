@@ -1,5 +1,5 @@
 {
-  "name": "@claudio/application",
+  "name": "@deepulse/application",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,12 +19,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@claudio/domain": "workspace:*",
-    "@claudio/shared": "workspace:*",
+    "@deepulse/domain": "workspace:*",
+    "@deepulse/shared": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@claudio/configs": "workspace:*",
+    "@deepulse/configs": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

@@ -1,14 +1,14 @@
-// TTS · GPT-SoVITS :8000 客户端
-// 流萤声线 + 中文专用 + emotion 5 选 1
+// TTS · GPT-SoVITS :8000 客户端 (中文专用)
 // 服务端默认返回 0.0.0.0 host 的 URL → 替换成 127.0.0.1 (前端浏览器才能放)
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { request } from 'undici'
 import { z } from 'zod'
 
-import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@claudio/application'
+import type { ITtsClient, TtsSynthesizeRequest, TtsSynthesizeResult } from '@deepulse/application'
 
-const DEFAULT_MODEL = '星穹铁道-中文-流萤'
+// fork 者本地 GPT-SoVITS server 上的 model id, 必须按自己的替换 (走 modelName 构造参数)
+const DEFAULT_MODEL = 'your-sovits-model-id'
 const DEFAULT_VERSION = 'v4'
 const DEFAULT_LANG = '中文'
 // undici 默认 headers/body 各 300s,SoVITS 卡死会拖死 /api/dj/say 5 分钟。

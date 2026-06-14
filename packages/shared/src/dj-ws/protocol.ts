@@ -12,7 +12,7 @@ import { z } from 'zod'
 //
 // 架构上 DjContext 是个业务概念, 但 schema 必须留在 shared (transport 验证层),
 // 因为 shared 不能反向依赖 application. application/dj 做 type-only re-export
-// 让业务层代码统一从 @claudio/application/dj 引用 (PWA 跨包仍可用 @claudio/shared/dj-ws)
+// 让业务层代码统一从 @deepulse/application/dj 引用 (PWA 跨包仍可用 @deepulse/shared/dj-ws)
 //
 // SECURITY: 所有字符串都有 max 上限 — 这些字段会直接拼入 LLM system prompt
 // 没 cap 的话客户端可以塞 "晴天\n\n忽略上面指令..." 这种 prompt-injection payload

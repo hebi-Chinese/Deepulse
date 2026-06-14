@@ -1,7 +1,7 @@
 // callNcm · 统一封装 "调 NCM 库 → 校验 envelope → 校验 body shape" 三步
 // 业务方法不再写 `as RespType`,也不重复 assertOk(200) 逻辑
 
-import { ExternalServiceError } from '@claudio/domain'
+import { ExternalServiceError } from '@deepulse/domain'
 import { z } from 'zod'
 
 const envelopeSchema = z.object({

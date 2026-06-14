@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Claudio',
+  title: 'Deepulse',
   description: '个人 AI 电台',
   manifest: '/manifest.json',
 }

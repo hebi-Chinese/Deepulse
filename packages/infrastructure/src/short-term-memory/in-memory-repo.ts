@@ -3,7 +3,7 @@
 // 单进程内存, 不跨服务. session TTL 走 setTimeout
 // IClock 注入让测试可控时间
 
-import type { IClock, IShortTermMemoryRepo, SessionTurn } from '@claudio/application'
+import type { IClock, IShortTermMemoryRepo, SessionTurn } from '@deepulse/application'
 
 export type InMemoryShortTermConfig = {
   readonly idleTtlMs: number
