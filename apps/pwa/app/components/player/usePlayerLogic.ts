@@ -126,7 +126,6 @@ function usePersonalizedAutoAppend(state: PlayerState, actions: PlayerActions): 
       .catch((err: unknown) => {
         console.warn('[usePersonalizedAutoAppend] fetch failed:', err)
       })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- actions 函数 ref 稳定, 不必进 deps
   }, [mode, currentIndex, queueLen])
 }
 
@@ -280,14 +279,28 @@ type TransportActions = Pick<
 >
 
 function useTransportActions(audioRef: AudioRef, setState: SetState): TransportActions {
+  const stepActions = useStepActions(setState)
+  const playbackActions = usePlaybackActions(audioRef, setState)
+  const seekModeActions = useSeekModeActions(audioRef, setState)
+
+  return { ...playbackActions, ...stepActions, ...seekModeActions }
+}
+
+type StepActions = Pick<TransportActions, 'handlePrev' | 'handleNext'>
+
+function useStepActions(setState: SetState): StepActions {
   const handleNext = useCallback(() => {
     setState((s) => stepNext(s))
   }, [setState])
   const handlePrev = useCallback(() => {
     setState((s) => stepPrev(s))
   }, [setState])
-  // 单曲循环: 副作用(audio.play)必须在 setState 外,否则 React StrictMode 会双播.
-  // setState 用同步 read,所以这里直接读 audioRef + 走纯 transformer.
+  return { handlePrev, handleNext }
+}
+
+type PlaybackActions = Pick<TransportActions, 'togglePlay' | 'handleEnded'>
+
+function usePlaybackActions(audioRef: AudioRef, setState: SetState): PlaybackActions {
   const handleEnded = useCallback(() => {
     const audio = audioRef.current
     setState((current) => {
@@ -317,6 +330,12 @@ function useTransportActions(audioRef: AudioRef, setState: SetState): TransportA
     }
   }, [audioRef, setState])
 
+  return { togglePlay, handleEnded }
+}
+
+type SeekModeActions = Pick<TransportActions, 'onSeek' | 'cycleMode'>
+
+function useSeekModeActions(audioRef: AudioRef, setState: SetState): SeekModeActions {
   const onSeek = useCallback(
     (sec: number) => {
       const audio = audioRef.current
@@ -337,7 +356,7 @@ function useTransportActions(audioRef: AudioRef, setState: SetState): TransportA
     })
   }, [setState])
 
-  return { togglePlay, handlePrev, handleNext, handleEnded, onSeek, cycleMode }
+  return { onSeek, cycleMode }
 }
 
 // ────────────────────────────────────────────────────────────────────────
